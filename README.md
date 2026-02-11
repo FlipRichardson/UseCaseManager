@@ -1,2 +1,7 @@
-# UseCaseManager
-AI-assisted use case manager extracting use cases from workshop manuscripts. They are stored in a database and a GUI allows for interaction.
+# AI-Powered Use Case Manager
+
+Extract and manage use cases from workshop transcripts through a conversational AI agent.
+
+## Status
+
+In Development - Day 1: Project setup and database foundation
