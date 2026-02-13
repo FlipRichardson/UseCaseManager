@@ -23,3 +23,15 @@
     - can filter results by its own (return only healthcare usecases)
 - used Claude 3.5 sonnet
 - decided to not further test other agents due to time constraints, can be done when encountering problems
+- implemented CRUD layer in notebook
+    - Class UseCaseService with many functions as
+    - get_all_use_cases
+    - get_use_case_by_id
+    - create_use_case
+    - update_use_case
+    - update_use_case_status
+    - delete_use_case
+    - filter_use_cases
+    - archive_use_case
+    - and some helpers
+- copied to python file
