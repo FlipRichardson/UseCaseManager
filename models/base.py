@@ -8,7 +8,7 @@ Base = declarative_base()
 DATABASE_URL = "sqlite:///use_cases.db"
 
 # Create engine (connection to database)
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 
 # Create session factory (for database operations)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
