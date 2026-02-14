@@ -150,6 +150,9 @@ Same as should haves, maybe visualizations would be nice.
 - How much validation in service layer vs. trusting LLM
 - Error handling strategy for LLM failures
 
+
+
+
 ---
 
 **Last Updated:** Day 1 - Initial Planning

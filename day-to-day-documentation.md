@@ -1,0 +1,78 @@
+## Day 1 (11.02. Evening)
+- set up venv
+- set up basic folder structure
+- made plan and scoping
+- set up git
+
+## Day 2 (13.02.)
+- implemented database classes in folder models
+    - base
+    - industry
+    - company
+    - person
+    - usecase
+- filled dummy database with dummy data
+- tested agent calling - is connection working?
+- implemented function call
+    - get all use cases from dummy database
+    - nothing more
+- Agent connection was successfull
+- Agent can call the function (get_all_use_cases) and returns them 
+- Tested other prompts: 
+    - sometimes agent still calls function, yet doesnt include the result in response
+    - can filter results by its own (return only healthcare usecases)
+- used Claude 3.5 sonnet
+- decided to not further test other agents due to time constraints, can be done when encountering problems
+- implemented CRUD layer in notebook
+    - Class UseCaseService with many functions as
+    - get_all_use_cases
+    - get_use_case_by_id
+    - create_use_case
+    - update_use_case
+    - update_use_case_status
+    - delete_use_case
+    - filter_use_cases
+    - archive_use_case
+    - and some helpers
+- copied to python file
+
+# Day 3 (14.02, Midday): 
+- documentation and test service functions
+- implemented all tools
+- implemented run_agent
+    - user -> agent call 1 -> tools -> agent call 2 -> done
+    - what does not work with this approach is something like: Get use case 5 and based on its industry, create a similar one
+    - I dont implement this for now for the following reasons
+        - time
+        - Not enough experience what happens really, maybe we end in en infite loop or whatever
+        - Specs dont state that
+        - would probably possible, when adding a history to the chat and ask the agent to do that in multiple input steps
+        - rather a nice to have feature, most user woudnt recognize
+    - the function currently has no history: 
+        if the user gets an agent answer: [...] would you like more details on UC XY. And the User answers "Yes, please", the agent doesnt know what to do. 
+    - Plan for now: Test the functionaliyt thouroughly now and integrate history later when it comes to the UI, where this needs to be handled anyway (And there is a place to store it), enlarghement with history is probably not too complex
+    - However: identified problem if only specific values are ok, e.g. for the status, typos or germen translation wouldnt work. or if the model tries to input a comapny name to id field.
+    - Therefore: Updtaed the tools such that they know what is possible and to translate the user input to their actual intent
+    - **Test results**
+        - Show me all use cases -> good
+        - Tell me about use case number 1 -> good
+        - Show me all use cases with status 'new' -> good
+        - Change use case 1 to status 'in_progress' -> good BUT: Update did work but the agent mentions that the user can see the details above, which was only visible to the agent for second call -> minor problem, I will solve it later if time (TODO)
+        - Create a new use case called 'Test Agent Integration' for company 1 in industry 2 -> good
+        - Bitte setze Use Case 1 auf Status 'In Bewertung' -> good
+        - Show me use cases that are 'in progres' -> good
+        - Filter nach Status abgeschlossen -> good
+        - Mark use case 2 as done -> good
+        - Set use case 3 to 'reviewing' -> good
+        - Show me all use cases in industry 1 that are approved -> good
+        - Erstelle einen neuen Use Case 'Test Deutsch' für Firma 1 in Branche 1 mit Status 'genehmigt' -> good
+    - Overall the agent is performing well enough, hoewever, there are a few **open problems**:
+        - If user asks the agent: show all use cases related to IT? The agent cannot really solve that problem
+            - He could use get_all_use_cases and try some interpretation, however, this is a rather hacky way
+            - It is also observed, that the agent just puts in some random industry id and returns that, which it entirely wrong.
+            - Rather, he should filter for industry_id == 2 (or what ever) and return the relevant use cases
+            - Currently, this is not possible, therefore the approach is:
+                - add some more database service functions (as get_industries, get_companies, get_persons)
+                - add the tool interfaces
+                - make the agent call a 3-step procedure: User input -> Call 1 -> results -> Call 2 -> result -> Call 3 = final answer
+                - I dont want to let the agent call infinite times in a kind of "while (problem_unsolved)" procedure, this seems too risky and I dont have time for this
