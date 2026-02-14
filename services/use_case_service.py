@@ -369,6 +369,107 @@ class UseCaseService:
             Dict[str, Any] : Dict of the use case that has been archived
         """ 
         return self.update_use_case_status(use_case_id, "archived")
+    
+    def get_all_industries(self) -> List[Dict[str, Any]]:
+        """  
+        Get all industries with their IDs and names.
+
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing:
+                - id: Industry ID
+                - name: Industry name
+        """
+        db = self._get_session()
+
+        try: 
+            # return all industries as dictionaries
+            industries = db.query(Industry).all()
+            return [{"id": ind.id, "name": ind.name} for ind in industries]
+        finally:
+            db.close()
+
+    def get_all_companies(self) -> List[Dict[str, Any]]: 
+        """  
+        Get all companies with their IDs, names, and industry information.
+        
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing:
+                - id: Company ID
+                - name: Company name
+                - industry_id: Associated industry ID
+                - industry_name: Associated industry name
+        """
+        db = self._get_session()
+
+        try: 
+            companies = db.query(Company).all()
+            return [{
+                "id": comp.id,
+                "name": comp.name,
+                "industry_id": comp.industry_id,
+                "industry_name": comp.industry.name
+            } for comp in companies]
+        finally:
+            db.close()
+
+    def get_all_persons(self) -> List[Dict[str, Any]]: 
+        """ 
+        Get all persons with their IDs, names, roles, and company information.
+        
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing:
+                - id: Person ID
+                - name: Person name
+                - role: Person's role/position
+                - company_id: Associated company ID
+                - company_name: Associated company name
+        """
+        db = self._get_session()
+
+        try:
+            
+            persons = db.query(Person).all()
+            return [{
+                "id": person.id,
+                "name": person.name,
+                "role": person.role,
+                "company_id": person.company_id,
+                "company_name": person.company.name
+            } for person in persons]
+        finally:
+            db.close()
+
+    def get_persons_by_use_case(self, use_case_id : int) -> List[Dict[str, Any]]: 
+        """  
+        Get all persons who contributed to a specific use case.
+        
+        Args:
+            use_case_id (int): ID of the use case
+        
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing:
+                - id: Person ID
+                - name: Person name
+                - role: Person's role/position
+                - company_name: Associated company name
+        """
+        db = self._get_session()
+
+        try: 
+            use_case = db.query(UseCase).filter(UseCase.id == use_case_id).first()
+            if not use_case:
+                raise ValueError(f"Use case with ID {use_case_id} does not exist.")
+            
+            return [{
+                "id": person.id,
+                "name": person.name,
+                "role": person.role,
+                "company_name": person.company.name
+            } for person in use_case.persons]
+
+        finally:
+            db.close()
+
 
             
     def __repr__(self):
