@@ -35,3 +35,6 @@
     - archive_use_case
     - and some helpers
 - copied to python file
+
+# Day 3 (14.02, Midday): 
+- documentation and test service functions

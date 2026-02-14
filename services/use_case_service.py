@@ -23,6 +23,16 @@ class UseCaseService:
         return SessionLocal()  # may get more complicated dont know, if so can be handeled centrally here
     
     def _validate_status(self, status : str) -> None:
+        """
+        Validate that a status value is allowed. Vlaid vlaues are: new, in_review, approved, 
+        in_progress, completed, archived
+        
+        Args:
+            status (str) : status to be validated
+
+        Raises:
+            ValueError: if status is not in valid values
+        """
         if status not in self.valid_status_values:
             valid_status_valus = ", ".join(self.valid_status_values)
             raise ValueError(f"Given status '{status}' is not valid. Please choose one of the following status values '{valid_status_valus}'")
@@ -31,10 +41,18 @@ class UseCaseService:
         """
         Helper function translating a use case to a dict. 
         Args: 
-            use_case : Use case abj
+            use_case : Use case object
 
         Returns: 
-            Dict containing use case information EXCEPT persons involved
+            Dict containing use case information EXCEPT persons involved: 
+            - id (int)
+            - title (str)
+            - description (str)
+            - expected_benefit (str)
+            - company_id (int)
+            - industry_id (int)
+            - industry_name (str)
+            - company_name (str)
         """
         return {
             "id": use_case.id,
@@ -51,6 +69,21 @@ class UseCaseService:
 
     
     def get_all_use_cases(self) -> List[Dict[str, Any]]: 
+        """  
+        Retrieve all use cases from the database.
+    
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries, each containing:
+                - id: Use case ID
+                - title: Use case title
+                - description: Detailed description
+                - expected_benefit: Expected benefits
+                - status: Current status
+                - company_id: Associated company ID
+                - company_name: Associated company name
+                - industry_id: Associated industry ID
+                - industry_name: Associated industry name
+        """
         # get db
         db = self._get_session()
 
@@ -64,9 +97,14 @@ class UseCaseService:
 
     def get_use_case_by_id(self, use_case_id : int) -> Optional[Dict[str, Any]]:
         """
-        get the use case for the identifier provided.
+        Retreive an use case dict by providing its ID. 
+
+        Args:
+            use_case_id (int) : use case id to get information for
+
+        Returns:
+            Dict[str, Any] : Dictionary about use case info
         """
-        
         db = self._get_session()
 
         try: 
@@ -80,6 +118,20 @@ class UseCaseService:
             db.close()
 
     def create_use_case(self, title : str, company_id : int, industry_id : int, description : str = None, expected_benefit : str = None, status : str  = 'new') -> Dict[str, Any]:
+        """  
+        Create new use case in the database.
+
+        Args: 
+            title (str) : Use case title
+            company_id (int) : Company identifier
+            industry_id (int) : industry identifier
+            description (Optional[str]) : Use case description, default None
+            expected_benefit (OPtional[str]) : Expected benefit description, default None
+            status (str) : use case's status value, default "new"
+
+        Returns:
+            Dict[str, Any] : Informatzion dictionary of use case created    
+        """
 
         db = self._get_session()
 
@@ -141,10 +193,16 @@ class UseCaseService:
         Update an use case specified by use_case id. Only arguments provided will be updated. 
 
         Args:
-            ...
+            use_case_id (int): ID of the use case to update (required)
+            title (Optional[str]): New title (default: None, no change)
+            description (Optional[str]): New description (default: None, no change)
+            expected_benefit (Optional[str]): New expected benefit (default: None, no change)
+            status (Optional[str]): New status (default: None, no change)
+            company_id (Optional[int]): New company ID (default: None, no change)
+            industry_id (Optional[int]): New industry ID (default: None, no change)
         
-        Returns: 
-            updated use case as dictionary.
+        Returns:
+            Dict[str, Any]: Dictionary containing the updated use case information
         """
         
         db = self._get_session()
@@ -209,9 +267,10 @@ class UseCaseService:
         Update the status of an use case specifed by the ID. 
 
         Args: 
-            status. str
+            use_case_id (int) : ID of the use case to get a new status
+            status (str) : New staus value
         Reurns:
-            Dictionay of updated use case. 
+            Dict[str, Any] : Updated use case .
         """
         return self.update_use_case(use_case_id = use_case_id, status = status)
     
@@ -308,7 +367,7 @@ class UseCaseService:
             use_case_id (int) : use case id of use case to be archived
 
         Returns:
-            Dict of the use case that has been archived
+            Dict[str, Any] : Dict of the use case that has been archived
         """ 
         return self.update_use_case_status(use_case_id, "archived")
 
