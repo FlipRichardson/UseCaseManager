@@ -76,3 +76,18 @@
                 - add the tool interfaces
                 - make the agent call a 3-step procedure: User input -> Call 1 -> results -> Call 2 -> result -> Call 3 = final answer
                 - I dont want to let the agent call infinite times in a kind of "while (problem_unsolved)" procedure, this seems too risky and I dont have time for this
+    Therefore:
+    - Added new functions to database interaction and tested them
+        - get_all_industries
+        - get_all_companies
+        - get_all_persons
+        - get_persons_by_use_case
+    - added the respective tools and mappings to the agent, and expicitly named the procedure of this function needs to be called first in order to find out the comany's ID ...
+    - updated function run_agent by argument "max_rounds". This argument sets the maximum number of iterations the agent may take to review database and piece together the information the user asked for
+    - this was then for tests set to 2, and tested
+        - Show me all energy related use cases -> ROUND 1: get_all_industries → finds Energy has ID=1, ROUND 2: filter_use_cases(industry_id=1) → returns 4 Energy use cases
+        - What use cases does Siemens Energy have? -> ROUND 1: get_all_companies → finds Siemens Energy has ID=1, ROUND 2: filter_use_cases(company_id=1) → returns 2 Siemens use cases
+        - Who contributed to use case number 1? -> ROUND 1: get_persons_by_use_case(1) → returns Anna & Michael, ROUND 2: No tools needed
+        - Show me what use cases Anna Schmidt worked on -> ROUND 1: get_all_persons → finds Anna Schmidt has ID=1, ROUND 2: filter_use_cases(person_id=1) → returns Anna's 2 use cases
+        - Create a new use case called 'Test Multi-Round' for Bosch -> ROUND 1: get_all_companies → finds Bosch has ID=4, industry_id=2, ROUND 2: create_use_case(company_id=4, industry_id=2) → creates new UC
+        - Zeige mir alle Use Cases im Energiesektor -> "Energiesektor" → Energy industry → correct filtering, answer in German
