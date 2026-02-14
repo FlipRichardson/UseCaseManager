@@ -90,7 +90,6 @@ class UseCaseService:
         # try to get all use cases and format them reasonably
         try: 
             use_cases = db.query(UseCase).all()
-            print(use_cases)
             return [self._use_case_to_dict(uc) for uc in use_cases]
         finally:
             db.close()
