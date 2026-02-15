@@ -95,3 +95,15 @@
 # Day 4 (15.02., Midday):
 - Agent interacting with database transferred from notebook to python fikes and run a quick test if that is working in the given folder structure
 - added some dummy transcripts to test and develop use case extraction
+
+- Decided procedure for rtrabnscript extraction needs more helper:
+    - Idea: Design good promt for one agent to create a new usecase
+        - This comes with challenges:
+            - How does the agent know comanpy, industry and their IDs?
+            - What if those dont exist?
+            - Same problem applies for persons
+            - Additionally, Persons need to be linked to usecase afterwards
+            - Assuming those are already in the database seems boring
+        - but the good thing is: Already strong agent developed that could potentionally do this (also in a multi step procedure with first checking what exists otherwise create and so on)
+            - needs some more service functions to create everything and link persons,  therefore
+                - added those functions to the service layer: create_industry/company/person
