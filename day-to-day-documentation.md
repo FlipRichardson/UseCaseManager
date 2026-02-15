@@ -107,3 +107,12 @@
         - but the good thing is: Already strong agent developed that could potentionally do this (also in a multi step procedure with first checking what exists otherwise create and so on)
             - needs some more service functions to create everything and link persons,  therefore
                 - added those functions to the service layer: create_industry/company/person
+            - added tools with descriptions to the agent
+            - increated the maximum number of rounds to 10 (necessary to do all checks, like: Is the company/industry/person already existing, if not create them, create use case, link persons to use case)
+    - tested the agent with the creation of a use case with only one promt (in the promt all information provided)
+        - the agent checked everything
+        - created what was necessary 
+        - added persons to use case
+    - designed prompt for LLM that designs promts for the agent -> Transcript -> LLM -> List of promts
+    - the agent get those promts one by one 
+        - Does all the adding and checking steps 
