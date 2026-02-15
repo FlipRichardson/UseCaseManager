@@ -91,3 +91,7 @@
         - Show me what use cases Anna Schmidt worked on -> ROUND 1: get_all_persons → finds Anna Schmidt has ID=1, ROUND 2: filter_use_cases(person_id=1) → returns Anna's 2 use cases
         - Create a new use case called 'Test Multi-Round' for Bosch -> ROUND 1: get_all_companies → finds Bosch has ID=4, industry_id=2, ROUND 2: create_use_case(company_id=4, industry_id=2) → creates new UC
         - Zeige mir alle Use Cases im Energiesektor -> "Energiesektor" → Energy industry → correct filtering, answer in German
+
+# Day 4 (15.02., Midday):
+- Agent interacting with database transferred from notebook to python fikes and run a quick test if that is working in the given folder structure
+- added some dummy transcripts to test and develop use case extraction
