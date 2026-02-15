@@ -470,6 +470,309 @@ class UseCaseService:
         finally:
             db.close()
 
+    def create_industry(self, name: str) -> Dict[str, Any]:
+        """
+        Create a new industry.
+        
+        Args:
+            name (str): Industry name
+            
+        Returns:
+            Dict[str, Any]: Created industry with id and name
+            
+        Raises:
+            ValueError: If industry with this name already exists
+        """
+        db = self._get_session()
+        try:
+            # Check if already exists
+            existing = db.query(Industry).filter(Industry.name == name).first()
+            if existing:
+                raise ValueError(f"Industry '{name}' already exists with ID {existing.id}")
+            
+            # Create new
+            industry = Industry(name=name)
+            db.add(industry)
+            db.commit()
+            db.refresh(industry)
+            
+            return {"id": industry.id, "name": industry.name}
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    def create_company(self, name: str, industry_id: int) -> Dict[str, Any]:
+        """
+        Create a new company.
+        
+        Args:
+            name (str): Company name
+            industry_id (int): ID of the industry this company belongs to
+            
+        Returns:
+            Dict[str, Any]: Created company info
+            
+        Raises:
+            ValueError: If company already exists or industry doesn't exist
+        """
+        db = self._get_session()
+        try:
+            # Check if industry exists
+            industry = db.query(Industry).filter(Industry.id == industry_id).first()
+            if not industry:
+                raise ValueError(f"Industry with ID {industry_id} does not exist")
+            
+            # Check if company already exists
+            existing = db.query(Company).filter(Company.name == name).first()
+            if existing:
+                raise ValueError(f"Company '{name}' already exists with ID {existing.id}")
+            
+            # Create new
+            company = Company(name=name, industry_id=industry_id)
+            db.add(company)
+            db.commit()
+            db.refresh(company)
+            
+            return {
+                "id": company.id,
+                "name": company.name,
+                "industry_id": company.industry_id,
+                "industry_name": industry.name
+            }
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    def create_person(self, name: str, role: str, company_id: int) -> Dict[str, Any]:
+        """
+        Create a new person.
+        
+        Args:
+            name (str): Person's name
+            role (str): Person's role/position
+            company_id (int): ID of the company this person works for
+            
+        Returns:
+            Dict[str, Any]: Created person info
+            
+        Raises:
+            ValueError: If company doesn't exist
+        """
+        db = self._get_session()
+        try:
+            # Check if company exists
+            company = db.query(Company).filter(Company.id == company_id).first()
+            if not company:
+                raise ValueError(f"Company with ID {company_id} does not exist")
+            
+            # Create new person
+            # duplicates are ok I guess
+            person = Person(name=name, role=role, company_id=company_id)
+            db.add(person)
+            db.commit()
+            db.refresh(person)
+            
+            return {
+                "id": person.id,
+                "name": person.name,
+                "role": person.role,
+                "company_id": person.company_id,
+                "company_name": company.name
+            }
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    def find_or_create_industry(self, name: str) -> Dict[str, Any]:
+        """
+        Find existing industry by name, or create if doesn't exist.
+        Case-insensitive search.
+        
+        Args:
+            name (str): Industry name
+            
+        Returns:
+            Dict[str, Any]: Industry info (existing or newly created)
+        """
+        db = self._get_session()
+        try:
+            # Try to find existing (case-insensitive)
+            industry = db.query(Industry).filter(
+                Industry.name.ilike(name)
+            ).first()
+            
+            if industry:
+                return {"id": industry.id, "name": industry.name}
+            
+            # Create new
+            industry = Industry(name=name)
+            db.add(industry)
+            db.commit()
+            db.refresh(industry)
+            
+            return {"id": industry.id, "name": industry.name}
+        finally:
+            db.close()
+
+    def find_or_create_company(self, name: str, industry_name: str) -> Dict[str, Any]:
+        """
+        Find existing company by name, or create if doesn't exist.
+        Also ensures industry exists (creates if needed).
+        Case-insensitive search.
+        
+        Args:
+            name (str): Company name
+            industry_name (str): Industry name
+            
+        Returns:
+            Dict[str, Any]: Company info (existing or newly created)
+        """
+        db = self._get_session()
+        try:
+            # Try to find existing company
+            company = db.query(Company).filter(
+                Company.name.ilike(name)
+            ).first()
+            
+            if company:
+                return {
+                    "id": company.id,
+                    "name": company.name,
+                    "industry_id": company.industry_id,
+                    "industry_name": company.industry.name
+                }
+            
+            # Need to create - first ensure industry exists
+            industry = db.query(Industry).filter(
+                Industry.name.ilike(industry_name)
+            ).first()
+            
+            if not industry:
+                industry = Industry(name=industry_name)
+                db.add(industry)
+                db.commit()
+                db.refresh(industry)
+            
+            # Now create company
+            company = Company(name=name, industry_id=industry.id)
+            db.add(company)
+            db.commit()
+            db.refresh(company)
+            
+            return {
+                "id": company.id,
+                "name": company.name,
+                "industry_id": company.industry_id,
+                "industry_name": industry.name
+            }
+        finally:
+            db.close()
+
+    def find_or_create_person(self, name: str, role: str, company_id: int) -> Dict[str, Any]:
+        """
+        Find existing person by name and company, or create if doesn't exist.
+        Updates role if person exists but role has changed.
+        
+        Args:
+            name (str): Person's name
+            role (str): Person's role/position
+            company_id (int): Company ID
+            
+        Returns:
+            Dict[str, Any]: Person info (existing or newly created)
+        """
+        db = self._get_session()
+        try:
+            # Try to find existing person at this company
+            person = db.query(Person).filter(
+                Person.name == name,
+                Person.company_id == company_id
+            ).first()
+            
+            if person:
+                # Update role if different
+                if person.role != role:
+                    person.role = role
+                    db.commit()
+                    db.refresh(person)
+                
+                return {
+                    "id": person.id,
+                    "name": person.name,
+                    "role": person.role,
+                    "company_id": person.company_id,
+                    "company_name": person.company.name
+                }
+            
+            # Create new
+            person = Person(name=name, role=role, company_id=company_id)
+            db.add(person)
+            db.commit()
+            db.refresh(person)
+            
+            return {
+                "id": person.id,
+                "name": person.name,
+                "role": person.role,
+                "company_id": person.company_id,
+                "company_name": person.company.name
+            }
+        finally:
+            db.close()
+
+    def add_persons_to_use_case(self, use_case_id: int, person_ids: List[int]) -> Dict[str, Any]:
+        """
+        Add persons to a use case (many-to-many relationship).
+        Does NOT clear existing persons - only adds new ones.
+        
+        Args:
+            use_case_id (int): ID of the use case
+            person_ids (List[int]): List of person IDs to add
+            
+        Returns:
+            Dict with use case info and linked persons
+            
+        Raises:
+            ValueError: If use case doesn't exist
+        """
+        db = self._get_session()
+        try:
+            use_case = db.query(UseCase).filter(UseCase.id == use_case_id).first()
+            if not use_case:
+                raise ValueError(f"Use case with ID {use_case_id} does not exist")
+            
+            # Get current person IDs
+            current_person_ids = {p.id for p in use_case.persons}
+            
+            # Add new persons
+            added_count = 0
+            for person_id in person_ids:
+                if person_id not in current_person_ids:
+                    person = db.query(Person).filter(Person.id == person_id).first()
+                    if person:
+                        use_case.persons.append(person)
+                        added_count += 1
+            
+            db.commit()
+            
+            return {
+                "use_case_id": use_case_id,
+                "persons_added": added_count,
+                "total_persons": len(use_case.persons)
+            }
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+
 
             
     def __repr__(self):
