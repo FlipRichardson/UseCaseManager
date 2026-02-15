@@ -1,0 +1,42 @@
+Workshop Protokoll: KI in der Fertigung
+Datum: 20. Februar 2025
+Teilnehmer: BadenCampus Team mit Trumpf GmbH
+Ort: Trumpf Zentrale, Ditzingen
+
+Moderator (BadenCampus): Willkommen beim Workshop. Ich bin Sarah von BadenCampus. Vielen Dank, dass Sie sich die Zeit nehmen.
+
+Laura Meyer (AI Research Lead, Trumpf): Sehr gerne. Ich bin Laura Meyer, leite die KI-Forschung bei Trumpf. Wir sind sehr gespannt auf die Möglichkeiten.
+
+Moderator: Erzählen Sie uns von Ihren Herausforderungen in der Produktion.
+
+Laura: Trumpf ist Weltmarktführer bei Laserschneidmaschinen. Eine unserer größten Herausforderungen ist die Optimierung der Schneidparameter. Jedes Material, jede Dicke, jedes Design erfordert andere Lasereinstellungen.
+
+Moderator: Was passiert, wenn die Parameter nicht optimal sind?
+
+Laura: Schlechtere Schnittqualität, mehr Materialverschwendung, langsamere Produktion. Unsere Kunden - große Automobilzulieferer, Maschinenbauer - verlangen perfekte Ergebnisse. Aktuell verlassen wir uns auf Erfahrungswerte und manuelle Anpassungen unserer Techniker.
+
+Moderator: Und wo käme KI ins Spiel?
+
+Laura: Wir könnten ein System entwickeln, das aus vergangenen Schnitten lernt. Wir haben Tausende von Schneidvorgängen gespeichert - Material, Parameter, Qualitätsergebnisse. Ein Machine Learning Modell könnte die optimalen Parameter für neue Aufträge vorhersagen.
+
+Moderator: Was wäre der Nutzen?
+
+Laura: Wir erwarten 12% weniger Materialabfall, 18% höheren Durchsatz und deutlich bessere Schnittqualität. Das würde sowohl uns als auch unseren Kunden enormen Mehrwert bringen.
+
+Moderator: Haben Sie weitere Bereiche identifiziert?
+
+Laura: Ja, definitiv. Produktionsplanung ist ein großes Thema. Wir fertigen hochkomplexe Maschinen mit Hunderten von Komponenten. Die Planung, welche Teile wann produziert werden, ist extrem komplex.
+
+Moderator: Was sind die Probleme bei der aktuellen Planung?
+
+Laura: Verzögerungen in der Lieferkette, unvorhergesehene Maschinenausfälle, Rush-Orders von wichtigen Kunden. All das bringt unseren Produktionsplan durcheinander. Wir brauchen ein intelligentes System, das in Echtzeit umplanen kann.
+
+Moderator: Wie würde eine KI-Lösung aussehen?
+
+Laura: Das System würde kontinuierlich Daten aus der Produktion, Lieferkette, Auftragseingang analysieren. Bei Störungen würde es automatisch alternative Produktionspläne vorschlagen, die Liefertermine einhalten und Ressourcen optimal nutzen.
+
+Moderator: Welchen Nutzen erwarten Sie?
+
+Laura: 20% kürzere Durchlaufzeiten, 95% Termintreue statt aktuell 80%, und bessere Auslastung unserer teuren Produktionsanlagen. Das würde unsere Wettbewerbsfähigkeit erheblich steigern.
+
+Moderator: Perfekt. Zwei sehr konkrete Use Cases. Vielen Dank, Laura.

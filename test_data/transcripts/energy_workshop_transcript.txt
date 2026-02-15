@@ -1,0 +1,42 @@
+Workshop Transcript: Digitalisierung in der Energiewirtschaft
+Datum: 15. Februar 2025
+Teilnehmer: BadenCampus Team mit Vertreter von E.ON
+Ort: E.ON Hauptsitz, Essen
+
+Moderator (BadenCampus): Guten Morgen allerseits. Herzlich willkommen zu unserem Workshop zur Digitalisierung in der Energiewirtschaft. Ich bin Marc von BadenCampus, und wir freuen uns sehr, heute mit E.ON zusammenzuarbeiten.
+
+Lisa Müller (Innovation Manager, E.ON): Vielen Dank, Marc. Ich bin Lisa Müller, Innovation Manager bei E.ON. Wir haben einige spannende Herausforderungen, bei denen KI uns helfen könnte.
+
+Thomas Klein (Data Science Lead, E.ON): Genau. Ich bin Thomas Klein, leite das Data Science Team. Eine unserer größten Herausforderungen ist die Netzauslastung. Wir haben Millionen von Datenpunkten, aber es fällt uns schwer, daraus präzise Vorhersagen zu machen.
+
+Moderator: Interessant. Können Sie das näher erläutern?
+
+Thomas: Ja, also wir haben Smart Meter Daten von Tausenden von Haushalten. Das Problem ist, dass traditionelle Vorhersagemodelle die Volatilität nicht gut erfassen, besonders wenn erneuerbare Energien ins Spiel kommen. An sonnigen Tagen haben wir plötzlich massive Solareinspeisung, die wir besser vorhersagen müssen.
+
+Lisa: Genau, und das führt manchmal zu Netzüberlastungen oder ineffizienter Ressourcennutzung. Wenn wir die Netzauslastung 24-48 Stunden im Voraus besser vorhersagen könnten, würden wir unsere Ressourcen viel effizienter einsetzen können.
+
+Moderator: Das klingt nach einem klaren Use Case. Was wäre der konkrete Nutzen?
+
+Lisa: Wir schätzen, dass wir die Planungsgenauigkeit um 20-25% verbessern könnten, was zu niedrigeren Betriebskosten und weniger Netzüberlastungen führen würde. Außerdem könnten wir erneuerbare Energien besser integrieren.
+
+Thomas: Ein weiteres Thema, das uns beschäftigt, sind unsere Windkraftanlagen. Wir betreiben über 200 Windparks in ganz Deutschland. Die ungeplanten Ausfälle kosten uns jährlich Millionen.
+
+Moderator: Welche Art von Ausfällen meinen Sie?
+
+Thomas: Mechanische Defekte, die wir nicht rechtzeitig vorhersehen. Getriebeschäden, Generatorausfälle, Rotorblattprobleme. Wir haben Sensordaten von allen Turbinen - Vibrationen, Temperaturen, Leistungsdaten - aber wir nutzen sie noch nicht optimal.
+
+Lisa: Wenn wir ein KI-System hätten, das aus diesen Sensordaten Wartungsbedarf vorhersagen könnte, bevor ein Ausfall eintritt, würden wir enorm profitieren. Stellen Sie sich vor, wir könnten Wartungen planen, bevor etwas kaputt geht, statt reaktiv zu reparieren.
+
+Moderator: Das ist Predictive Maintenance. Was wären die konkreten Vorteile?
+
+Thomas: Wir rechnen mit 30% weniger ungeplanten Ausfällen, was die Verfügbarkeit erhöht. Außerdem könnten wir die Lebensdauer der Anlagen um 15-20% verlängern und Wartungskosten senken, weil wir besser planen können.
+
+Lisa: Und es gibt noch einen dritten Bereich: Energieverbrauchsprognosen für unsere Geschäftskunden. Wir haben Großkunden in der Industrie, die sehr volatile Verbrauchsmuster haben. Bessere Prognosen würden uns helfen, bessere Angebote zu machen.
+
+Moderator: Wie würde das funktionieren?
+
+Lisa: Wir würden historische Verbrauchsdaten, Produktionspläne, Wetterdaten und saisonale Muster kombinieren. Das KI-Modell könnte dann den Energiebedarf für die nächsten Wochen vorhersagen. Das würde uns helfen, die Energiebeschaffung zu optimieren und unseren Kunden bessere Tarife anzubieten.
+
+Thomas: Der erwartete Nutzen wäre eine 15% genauere Bedarfsprognose, niedrigere Beschaffungskosten und zufriedenere Kunden durch maßgeschneiderte Angebote.
+
+Moderator: Ausgezeichnet. Vielen Dank für diese wertvollen Einblicke. Wir haben drei klare Use Cases identifiziert, die wir weiter ausarbeiten können.
