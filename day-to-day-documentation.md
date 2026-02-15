@@ -38,3 +38,60 @@
 
 # Day 3 (14.02, Midday): 
 - documentation and test service functions
+- implemented all tools
+- implemented run_agent
+    - user -> agent call 1 -> tools -> agent call 2 -> done
+    - what does not work with this approach is something like: Get use case 5 and based on its industry, create a similar one
+    - I dont implement this for now for the following reasons
+        - time
+        - Not enough experience what happens really, maybe we end in en infite loop or whatever
+        - Specs dont state that
+        - would probably possible, when adding a history to the chat and ask the agent to do that in multiple input steps
+        - rather a nice to have feature, most user woudnt recognize
+    - the function currently has no history: 
+        if the user gets an agent answer: [...] would you like more details on UC XY. And the User answers "Yes, please", the agent doesnt know what to do. 
+    - Plan for now: Test the functionaliyt thouroughly now and integrate history later when it comes to the UI, where this needs to be handled anyway (And there is a place to store it), enlarghement with history is probably not too complex
+    - However: identified problem if only specific values are ok, e.g. for the status, typos or germen translation wouldnt work. or if the model tries to input a comapny name to id field.
+    - Therefore: Updtaed the tools such that they know what is possible and to translate the user input to their actual intent
+    - **Test results**
+        - Show me all use cases -> good
+        - Tell me about use case number 1 -> good
+        - Show me all use cases with status 'new' -> good
+        - Change use case 1 to status 'in_progress' -> good BUT: Update did work but the agent mentions that the user can see the details above, which was only visible to the agent for second call -> minor problem, I will solve it later if time (TODO)
+        - Create a new use case called 'Test Agent Integration' for company 1 in industry 2 -> good
+        - Bitte setze Use Case 1 auf Status 'In Bewertung' -> good
+        - Show me use cases that are 'in progres' -> good
+        - Filter nach Status abgeschlossen -> good
+        - Mark use case 2 as done -> good
+        - Set use case 3 to 'reviewing' -> good
+        - Show me all use cases in industry 1 that are approved -> good
+        - Erstelle einen neuen Use Case 'Test Deutsch' für Firma 1 in Branche 1 mit Status 'genehmigt' -> good
+    - Overall the agent is performing well enough, hoewever, there are a few **open problems**:
+        - If user asks the agent: show all use cases related to IT? The agent cannot really solve that problem
+            - He could use get_all_use_cases and try some interpretation, however, this is a rather hacky way
+            - It is also observed, that the agent just puts in some random industry id and returns that, which it entirely wrong.
+            - Rather, he should filter for industry_id == 2 (or what ever) and return the relevant use cases
+            - Currently, this is not possible, therefore the approach is:
+                - add some more database service functions (as get_industries, get_companies, get_persons)
+                - add the tool interfaces
+                - make the agent call a 3-step procedure: User input -> Call 1 -> results -> Call 2 -> result -> Call 3 = final answer
+                - I dont want to let the agent call infinite times in a kind of "while (problem_unsolved)" procedure, this seems too risky and I dont have time for this
+    Therefore:
+    - Added new functions to database interaction and tested them
+        - get_all_industries
+        - get_all_companies
+        - get_all_persons
+        - get_persons_by_use_case
+    - added the respective tools and mappings to the agent, and expicitly named the procedure of this function needs to be called first in order to find out the comany's ID ...
+    - updated function run_agent by argument "max_rounds". This argument sets the maximum number of iterations the agent may take to review database and piece together the information the user asked for
+    - this was then for tests set to 2, and tested
+        - Show me all energy related use cases -> ROUND 1: get_all_industries → finds Energy has ID=1, ROUND 2: filter_use_cases(industry_id=1) → returns 4 Energy use cases
+        - What use cases does Siemens Energy have? -> ROUND 1: get_all_companies → finds Siemens Energy has ID=1, ROUND 2: filter_use_cases(company_id=1) → returns 2 Siemens use cases
+        - Who contributed to use case number 1? -> ROUND 1: get_persons_by_use_case(1) → returns Anna & Michael, ROUND 2: No tools needed
+        - Show me what use cases Anna Schmidt worked on -> ROUND 1: get_all_persons → finds Anna Schmidt has ID=1, ROUND 2: filter_use_cases(person_id=1) → returns Anna's 2 use cases
+        - Create a new use case called 'Test Multi-Round' for Bosch -> ROUND 1: get_all_companies → finds Bosch has ID=4, industry_id=2, ROUND 2: create_use_case(company_id=4, industry_id=2) → creates new UC
+        - Zeige mir alle Use Cases im Energiesektor -> "Energiesektor" → Energy industry → correct filtering, answer in German
+
+# Day 4 (15.02., Midday):
+- Agent interacting with database transferred from notebook to python fikes and run a quick test if that is working in the given folder structure
+- added some dummy transcripts to test and develop use case extraction
