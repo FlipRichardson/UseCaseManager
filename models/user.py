@@ -23,6 +23,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)
+    name = Column(String(100), nullable=True)
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
