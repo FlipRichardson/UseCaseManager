@@ -3,3 +3,4 @@ from models.industry import Industry
 from models.company import Company
 from models.person import Person
 from models.use_case import UseCase
+from models.user import User
