@@ -1,7 +1,8 @@
 from services import UseCaseService
 
-v1_testing = False
-v2_testing = True
+v1_testing = False # base
+v2_testing = False # get perons, get industry, get company -> for second iteration if needed
+v3_testing = True # create industry, create company, create person, find_or_create_company/person
 
 if v1_testing:
     print("="*60)
@@ -190,3 +191,42 @@ if v2_testing:
     print("\n" + "="*60)
     print(" ALL PERSON TESTS PASSED!")
     print("="*60)
+
+if v3_testing:
+    # Quick test script
+    from services import UseCaseService
+
+    service = UseCaseService()
+
+    print("Testing new service methods...")
+
+    # Test 1: Find or create industry
+    print("\n1. Find or create industry:")
+    industry = service.find_or_create_industry("Automotive")
+    print(f"   ✓ {industry}")
+
+    # Test 2: Find or create company
+    print("\n2. Find or create company:")
+    company = service.find_or_create_company("Volkswagen", "Automotive")
+    print(f"   ✓ {company}")
+
+    # Test 3: Find or create person
+    print("\n3. Find or create person:")
+    person = service.find_or_create_person("Test Person", "Test Role", company['id'])
+    print(f"   ✓ {person}")
+
+    # Test 4: Create use case and link person
+    print("\n4. Create use case:")
+    uc = service.create_use_case(
+        title="Test Use Case",
+        company_id=company['id'],
+        industry_id=industry['id']
+    )
+    print(f"   ✓ Use case created: {uc['id']}")
+
+    # Test 5: Add person to use case
+    print("\n5. Link person to use case:")
+    result = service.add_persons_to_use_case(uc['id'], [person['id']])
+    print(f"   ✓ {result}")
+
+    print("\n✓ All tests passed!")
