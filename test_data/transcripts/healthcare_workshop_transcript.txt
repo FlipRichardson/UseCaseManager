@@ -1,0 +1,46 @@
+Workshop Mitschrift: Digitalisierung im Gesundheitswesen
+Datum: 22. Februar 2025
+Teilnehmer: BadenCampus mit Helios Kliniken
+Ort: Helios Klinikum Berlin-Buch
+
+Moderator (BadenCampus): Guten Tag zusammen. Ich freue mich auf unseren Workshop zu KI im Gesundheitswesen.
+
+Dr. Stefan Richter (Head of Digitalization, Helios): Vielen Dank. Ich bin Dr. Stefan Richter, verantwortlich für die Digitalisierung bei Helios. Wir sehen enormes Potenzial für KI in unseren Kliniken.
+
+Moderator: Wo sehen Sie die größten Chancen?
+
+Dr. Richter: Ein kritischer Bereich ist die Patientenflussoptimierung. Unsere Notaufnahmen sind oft überlastet, während andere Abteilungen unterausgelastet sind. Wir brauchen bessere Vorhersagen und Ressourcenplanung.
+
+Moderator: Können Sie ein konkretes Beispiel geben?
+
+Dr. Richter: Nehmen wir die Notaufnahme. Wir wissen aus Erfahrung, dass Montage morgends und Freitagnachmittage besonders voll sind. Aber es gibt viele weitere Faktoren: Wetter, Grippezeiten, lokale Ereignisse. Eine KI könnte all diese Daten analysieren und vorhersagen, wie viele Patienten wann kommen.
+
+Moderator: Was würde das verbessern?
+
+Dr. Richter: Wir könnten das Personal besser einteilen, Betten rechtzeitig vorbereiten, andere Abteilungen koordinieren. Das würde Wartezeiten um 25% reduzieren und die Patientenzufriedenheit deutlich erhöhen. Außerdem könnten wir unsere Ressourcen um 20% effizienter nutzen.
+
+Moderator: Haben Sie weitere Use Cases?
+
+Dr. Richter: Ja, ein sehr wichtiger Bereich ist die Unterstützung bei radiologischen Diagnosen. Unsere Radiologen sind überlastet. Sie müssen täglich Hunderte von Röntgenbildern, CTs und MRTs befunden.
+
+Moderator: Wie könnte KI hier helfen?
+
+Dr. Richter: Ein KI-System könnte als zweite Meinung dienen. Es würde Bilder voranalysieren, Auffälligkeiten markieren, Prioritäten setzen. Kritische Fälle würden sofort an der Radiologen weitergeleitet, weniger dringende Fälle entsprechend eingeordnet.
+
+Moderator: Welchen Nutzen hätte das?
+
+Dr. Richter: Schnellere Diagnosen, weniger übersehene Befunde, Entlastung unserer Ärzte. Wir schätzen 20% schnellere Befundung bei gleichzeitig höherer Qualität. In kritischen Fällen könnte das Leben retten.
+
+Moderator: Das sind zwei sehr wertvolle Use Cases. Gibt es noch etwas?
+
+Dr. Richter: Tatsächlich ja - OP-Planung. Wir haben begrenzte OP-Säle und müssen Hunderte von Operationen pro Woche koordinieren. Manche OPs dauern länger als geplant, Notfälle kommen dazwischen, Personal fällt aus.
+
+Moderator: Eine klassische Optimierungsaufgabe?
+
+Dr. Richter: Genau. Eine KI könnte historische Daten nutzen - wie lange dauern welche OPs wirklich, welche Komplikationen sind wahrscheinlich, welche Chirurgen sind wie schnell - und daraus optimale Tagesplanungen erstellen. Bei Störungen könnte sie in Echtzeit umplanen.
+
+Moderator: Erwarteter Nutzen?
+
+Dr. Richter: 15% mehr OPs pro Jahr bei gleichen Ressourcen, kürzere Wartezeiten für Patienten, weniger Überstunden für das OP-Team. Das würde sowohl medizinisch als auch wirtschaftlich enormen Wert schaffen.
+
+Moderator: Hervorragend. Drei sehr klare Use Cases. Vielen Dank für Ihre Zeit, Dr. Richter.
