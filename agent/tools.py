@@ -377,6 +377,118 @@ tool_get_persons_by_use_case = {
     }
 }
 
+# Tool 12: Create industry
+tool_create_industry = {
+    "type": "function",
+    "function": {
+        "name": "create_industry",
+        "description": (
+            "Create a new industry in the database. "
+            "Use this when you need to add a new industry that doesn't exist yet. "
+            "IMPORTANT: Check if the industry already exists using get_all_industries first. "
+            "Only create if it truly doesn't exist."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the industry (e.g., 'Automotive', 'Energy', 'Healthcare')"
+                }
+            },
+            "required": ["name"]
+        }
+    }
+}
+
+# Tool 13: Create company
+tool_create_company = {
+    "type": "function",
+    "function": {
+        "name": "create_company",
+        "description": (
+            "Create a new company in the database. "
+            "Use this when you need to add a new company that doesn't exist yet. "
+            "IMPORTANT: Before creating, check if the company exists using get_all_companies. "
+            "You must provide a valid industry_id - if the industry doesn't exist (check this), create it first."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the company (e.g., 'Volkswagen', 'Siemens Energy')"
+                },
+                "industry_id": {
+                    "type": "integer",
+                    "description": "ID of the industry this company belongs to (must exist in database)"
+                }
+            },
+            "required": ["name", "industry_id"]
+        }
+    }
+}
+
+# Tool 14: Create person
+tool_create_person = {
+    "type": "function",
+    "function": {
+        "name": "create_person",
+        "description": (
+            "Create a new person in the database. "
+            "Use this when you need to add a person who contributed to use cases. "
+            "IMPORTANT: You must provide a valid company_id. "
+            "If you're unsure if the person already exists, check get_all_persons first."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Person's full name (e.g., 'Anna Schmidt', 'Dr. Thomas Klein')"
+                },
+                "role": {
+                    "type": "string",
+                    "description": "Person's role/position (e.g., 'CTO', 'Innovation Manager', 'Head of AI')"
+                },
+                "company_id": {
+                    "type": "integer",
+                    "description": "ID of the company this person works for (must exist in database)"
+                }
+            },
+            "required": ["name", "role", "company_id"]
+        }
+    }
+}
+
+# Tool 15: Add persons to use case
+tool_add_persons_to_use_case = {
+    "type": "function",
+    "function": {
+        "name": "add_persons_to_use_case",
+        "description": (
+            "Link persons to a use case to track who contributed ideas. "
+            "Use this after creating a use case to associate the people who were involved. "
+            "You can link multiple persons at once by providing a list of person IDs."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "use_case_id": {
+                    "type": "integer",
+                    "description": "ID of the use case to link persons to"
+                },
+                "person_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "List of person IDs to link to this use case"
+                }
+            },
+            "required": ["use_case_id", "person_ids"]
+        }
+    }
+}
+
 # Combine all tools into a list
 tools = [
     tool_get_all_use_cases,
@@ -386,8 +498,12 @@ tools = [
     tool_update_use_case_status,
     tool_delete_use_case,
     tool_filter_use_cases,
-    tool_get_all_industries,      
-    tool_get_all_companies,        
-    tool_get_all_persons,          
-    tool_get_persons_by_use_case 
+    tool_get_all_industries,
+    tool_get_all_companies,
+    tool_get_all_persons,
+    tool_get_persons_by_use_case,
+    tool_create_industry,
+    tool_create_company,
+    tool_create_person,
+    tool_add_persons_to_use_case
 ]

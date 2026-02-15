@@ -8,6 +8,7 @@ from services import UseCaseService
 service = UseCaseService()
 
 # mapping
+# Map function names to actual Python functions
 tool_functions = {
     "get_all_use_cases": service.get_all_use_cases,
     "get_use_case_by_id": service.get_use_case_by_id,
@@ -16,12 +17,15 @@ tool_functions = {
     "update_use_case_status": service.update_use_case_status,
     "delete_use_case": service.delete_use_case,
     "filter_use_cases": service.filter_use_cases,
-    "get_all_industries": service.get_all_industries,           
-    "get_all_companies": service.get_all_companies,             
-    "get_all_persons": service.get_all_persons,                 
-    "get_persons_by_use_case": service.get_persons_by_use_case  
+    "get_all_industries": service.get_all_industries,
+    "get_all_companies": service.get_all_companies,
+    "get_all_persons": service.get_all_persons,
+    "get_persons_by_use_case": service.get_persons_by_use_case,
+    "create_industry": service.create_industry,                
+    "create_company": service.create_company,                  
+    "create_person": service.create_person,                    
+    "add_persons_to_use_case": service.add_persons_to_use_case 
 }
-
 def execute_tool(function_name : str, arguments : dict):
     """
     Execute a tool function by name with given arguments.
