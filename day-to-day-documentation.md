@@ -116,3 +116,8 @@
     - designed prompt for LLM that designs promts for the agent -> Transcript -> LLM -> List of promts
     - the agent get those promts one by one 
         - Does all the adding and checking steps 
+- Authentiction procedure
+    - Added user class
+    - some service functions to add to the database and veryfy user
+    - added some dummy users to the test database
+    - tested user log in and creation
