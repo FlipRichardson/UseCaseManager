@@ -5,7 +5,8 @@ Creates a realistic test database with industries, companies, persons, and use c
 
 import os
 from models.base import Base, engine, SessionLocal
-from models import Industry, Company, Person, UseCase
+from models import Industry, Company, Person, UseCase, User
+import bcrypt as bcrypt_lib
 
 def delete_existing_db():
     """Delete the existing database file if it exists."""
@@ -95,6 +96,35 @@ def create_comprehensive_data():
         db.add_all(persons)
         db.commit()
         print(f"   ✓ Created {len(persons)} persons")
+
+        # ===== USERS (AUTHENTICATION) =====
+        print("\n5. Creating users...")
+
+        users_data = [
+            # (email, password, role, name)
+            ("reader@example.com", "reader123", "reader", "Read-Only User"),
+            ("maintainer@example.com", "maintainer123", "maintainer", "Maintainer User"),
+            ("admin@example.com", "admin123", "admin", "Admin User"),
+        ]
+
+        users = []
+        for email, password, role, name in users_data:
+            password_hash = bcrypt_lib.hashpw(password.encode('utf-8'), bcrypt_lib.gensalt()).decode('utf-8')
+            user = User(
+                email=email,
+                password_hash=password_hash,
+                role=role,
+                name=name
+            )
+            users.append(user)
+
+        db.add_all(users)
+        db.commit()
+        print(f"   ✓ Created {len(users)} users")
+        print("\n   Test credentials:")
+        for email, password, role, name in users_data:
+            print(f"     - {email} / {password} ({role})")
+
         
         # ===== USE CASES =====
         print("\n4. Creating use cases...")
@@ -228,6 +258,7 @@ def create_comprehensive_data():
         print(f"Industries:  {len([energy, manufacturing, healthcare])}")
         print(f"Companies:   {len(companies)}")
         print(f"Persons:     {len(persons)}")
+        print(f"Users:       {len(users)}")  # ← ADD THIS
         print(f"Use Cases:   {len(use_cases)}")
         print("="*60)
         
