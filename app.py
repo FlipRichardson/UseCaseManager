@@ -133,8 +133,9 @@ def handle_register(email: str, password: str, error_label):
         error_label.text = str(e)
         error_label.visible = True
 
-def send_message(message_input, chat_container):
-    """Handle sending a message to the agent"""
+async def send_message(message_input, chat_container):
+    """Handle sending a message to the agent (async to prevent UI freeze)"""
+    import asyncio
     from agent import run_agent
     from agent.tool_executor import set_current_user
     
@@ -163,16 +164,36 @@ def send_message(message_input, chat_container):
     with chat_container:
         with ui.row().classes('w-full mb-2'):
             ui.label(user_message).classes(
-                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] whitespace-pre-wrap'
+                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] ml-auto'
             )
     
-    # Call agent (without verbose output)
+    # Show "Agent is thinking..." message
+    with chat_container:
+        thinking_row = ui.row().classes('justify-start mb-2')
+        with thinking_row:
+            thinking_label = ui.label('🤔 Agent is thinking...').classes(
+                'bg-gray-100 px-4 py-2 rounded-lg border italic animate-pulse'
+            )
+    
+    # Scroll to show thinking message
+    chat_container.run_method('scrollTo', 0, 99999)
+    
+    # Run agent in background thread (prevents UI freeze)
     try:
-        # Build conversation history for agent (only user/assistant messages)
-        agent_history = [msg for msg in history]  # Copy history
-
-        # Call agent with full conversation context
-        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=True, max_rounds=10)
+        # Build conversation history
+        agent_history = [msg for msg in history]
+        
+        # Run agent in executor (separate thread, non-blocking)
+        agent_response = await asyncio.to_thread(
+            run_agent,
+            user_message,
+            conversation_history=agent_history[:-1],
+            verbose=False,
+            max_rounds=10
+        )
+        
+        # Remove "thinking..." message
+        thinking_row.delete()
         
         # Add agent response to history
         history.append({
@@ -194,6 +215,8 @@ def send_message(message_input, chat_container):
         chat_container.run_method('scrollTo', 0, 99999)
         
     except Exception as e:
+        # Remove "thinking..." message
+        thinking_row.delete()
         
         # Show error
         with chat_container:
@@ -496,9 +519,9 @@ def show_main_app():
             with ui.row().classes('w-full gap-2 items-end'):
                 message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
                 
-                # Enable pressing Enter to send
+                # Enable pressing Enter to send (async)
                 message_input.on('keydown.enter', lambda: send_message(message_input, chat_container))
-                
+
                 send_btn = ui.button('Send', icon='send', on_click=lambda: send_message(message_input, chat_container))
         
         # RIGHT COLUMN - Table (40%)
