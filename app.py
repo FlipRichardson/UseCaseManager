@@ -647,6 +647,73 @@ def show_main_app():
                         
                         ui.button('Create Use Case', on_click=create_use_case_manual, icon='add').classes('w-full')
 
+    # === USER MANAGEMENT SECTION (Admin only) ===
+    if check_permission(current_user, 'manage_users'):
+        
+        ui.separator().classes('my-6')
+        
+        ui.label('User Management').classes('text-xl font-bold mb-4')
+        
+        # Get all users
+        from services.user_service import UserService
+        user_service = UserService()
+        all_users = user_service.get_all_users()
+        
+        # User table
+        user_columns = [
+            {'name': 'id', 'label': 'ID', 'field': 'id', 'align': 'left'},
+            {'name': 'email', 'label': 'Email', 'field': 'email', 'align': 'left'},
+            {'name': 'name', 'label': 'Name', 'field': 'name', 'align': 'left'},
+            {'name': 'role', 'label': 'Role', 'field': 'role', 'align': 'left'},
+            {'name': 'actions', 'label': 'Actions', 'field': 'id', 'align': 'center'},
+        ]
+        
+        user_table = ui.table(
+            columns=user_columns,
+            rows=all_users,
+            row_key='id'
+        ).classes('w-full')
+        
+        # Add role change buttons to each row
+        user_table.add_slot('body-cell-actions', '''
+            <q-td :props="props">
+                <q-btn-group flat>
+                    <q-btn flat dense size="sm" label="Reader" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'reader'})" :color="props.row.role === 'reader' ? 'primary' : 'grey'" />
+                    <q-btn flat dense size="sm" label="Maintainer" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'maintainer'})" :color="props.row.role === 'maintainer' ? 'primary' : 'grey'" />
+                    <q-btn flat dense size="sm" label="Admin" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'admin'})" :color="props.row.role === 'admin' ? 'primary' : 'grey'" />
+                </q-btn-group>
+            </q-td>
+        ''')
+        
+        # Handle role change
+        def change_user_role(e):
+            user_id = e.args['user_id']
+            new_role = e.args['role']
+            
+            try:
+                # Update user role in database
+                from models.base import SessionLocal
+                from models.user import User
+                
+                db = SessionLocal()
+                try:
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user:
+                        old_role = user.role
+                        user.role = new_role
+                        db.commit()
+                        ui.notify(f'User {user.email} role changed from {old_role} to {new_role}', type='positive')
+                        ui.navigate.to('/')  # Refresh
+                    else:
+                        ui.notify('User not found', type='negative')
+                finally:
+                    db.close()
+                    
+            except Exception as error:
+                ui.notify(f'Error changing role: {error}', type='negative')
+        
+        user_table.on('set_role', change_user_role)
+
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title='UseCase Manager', 
