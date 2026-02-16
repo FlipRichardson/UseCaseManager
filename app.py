@@ -188,7 +188,7 @@ async def send_message(message_input, chat_container):
             run_agent,
             user_message,
             conversation_history=agent_history[:-1],
-            verbose=False,
+            verbose=True,
             max_rounds=10
         )
         
@@ -432,29 +432,81 @@ def show_main_app():
             # Upload Transcript button (only for maintainer/admin)
             if check_permission(current_user, 'create'):
                 async def handle_upload(e):
+                    import asyncio
+                    
                     try:
                         # Read uploaded file (async!)
                         content = (await e.file.read()).decode('utf-8')
-
-                        from extraction import process_transcript
+                        
+                        from extraction.transcript_processor import extract_prompts_from_transcript
+                        from agent import run_agent
                         from agent.tool_executor import set_current_user
-
+                        
                         set_current_user(current_user)
-                        ui.notify('Processing transcript...', type='info')
-
-                        result = process_transcript(content, verbose=True)
-
-                        if result['success']:
-                            ui.notify(
-                                f'Success! Created {result["use_cases_created"]} use case(s)',
-                                type='positive'
-                            )
-                            ui.navigate.to('/')
-                        else:
+                        
+                        # Step 1: Extract prompts
+                        ui.notify('📄 Extracting use cases from transcript...', type='info', position='top')
+                        
+                        # Run extraction in background
+                        prompts = await asyncio.to_thread(
+                            extract_prompts_from_transcript,
+                            content,
+                            verbose=False
+                        )
+                        
+                        if not prompts:
                             ui.notify('No use cases found in transcript', type='warning')
-
+                            return
+                        
+                        ui.notify(f'✓ Found {len(prompts)} use case(s). Creating them...', type='positive', position='top')
+                        
+                        # Step 2: Process each prompt with agent
+                        successful = 0
+                        
+                        for i, prompt in enumerate(prompts, 1):
+                            ui.notify(
+                                f'Creating use case {i}/{len(prompts)}...', 
+                                type='info',
+                                position='top',
+                                timeout=2000
+                            )
+                            
+                            try:
+                                # Run agent in background
+                                await asyncio.to_thread(
+                                    run_agent,
+                                    prompt,
+                                    conversation_history=None,
+                                    verbose=False,
+                                    max_rounds=10
+                                )
+                                successful += 1
+                                
+                            except Exception as e:
+                                print(f"Error creating use case {i}: {e}")
+                                # Continue with next use case
+                        
+                        # Final notification
+                        if successful == len(prompts):
+                            ui.notify(
+                                f'🎉 Success! Created all {successful} use case(s)!',
+                                type='positive',
+                                position='top',
+                                timeout=5000
+                            )
+                        else:
+                            ui.notify(
+                                f'⚠️ Created {successful}/{len(prompts)} use case(s). Check console for errors.',
+                                type='warning',
+                                position='top',
+                                timeout=5000
+                            )
+                        
+                        # Refresh page to show new use cases
+                        ui.navigate.to('/')
+                        
                     except Exception as error:
-                        ui.notify(f'Error: {error}', type='negative')
+                        ui.notify(f'Error processing transcript: {error}', type='negative')
                         import traceback
                         print(traceback.format_exc())
 
