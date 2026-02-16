@@ -161,7 +161,7 @@ def send_message(message_input, chat_container):
     
     # Display user message
     with chat_container:
-        with ui.row().classes('justify-end mb-2'):
+        with ui.row().classes('w-full mb-2'):
             ui.label(user_message).classes(
                 'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
             )
@@ -172,7 +172,7 @@ def send_message(message_input, chat_container):
         agent_history = [msg for msg in history]  # Copy history
 
         # Call agent with full conversation context
-        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=False, max_rounds=10)
+        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=True, max_rounds=10)
         
         # Add agent response to history
         history.append({
@@ -189,6 +189,8 @@ def send_message(message_input, chat_container):
         
         # Save history
         app.storage.user['conversation_history'] = history
+
+        ui.navigate.to('/')  # Simple refresh for now
         
         # Scroll to bottom
         chat_container.run_method('scrollTo', 0, 99999)
@@ -201,6 +203,125 @@ def send_message(message_input, chat_container):
                 ui.label(f'Error: {str(e)}').classes(
                     'bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 max-w-[80%]'
                 )
+
+def show_use_case_details(use_case_data, current_user):
+    """Show use case details in a dialog"""
+    from services import UseCaseService
+    from utils.permissions import check_permission
+    
+    service = UseCaseService()
+    
+    # Get full use case details
+    use_case = service.get_use_case_by_id(use_case_data['id'], current_user=current_user)
+    
+    if not use_case:
+        ui.notify('Use case not found', type='negative')
+        return
+    
+    # Get contributors
+    try:
+        contributors = service.get_persons_by_use_case(use_case['id'], current_user=current_user)
+    except:
+        contributors = []
+    
+    # Check if user can edit
+    can_edit = check_permission(current_user, 'update')
+    can_delete = check_permission(current_user, 'delete')
+    
+    # Create dialog
+    with ui.dialog() as dialog, ui.card().classes('w-full max-w-2xl'):
+        # Header
+        with ui.row().classes('w-full items-center justify-between mb-4'):
+            ui.label('Use Case Details').classes('text-xl font-bold')
+            ui.button(icon='close', on_click=dialog.close).props('flat round dense')
+        
+        # Content
+        with ui.column().classes('w-full gap-4'):
+            
+            # ID (read-only always)
+            ui.label(f'ID: {use_case["id"]}').classes('text-sm text-gray-600')
+            
+            # Title
+            if can_edit:
+                title_input = ui.input('Title', value=use_case['title']).classes('w-full')
+            else:
+                ui.label('Title').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case['title']).classes('text-lg')
+            
+            # Description
+            if can_edit:
+                desc_input = ui.textarea('Description', value=use_case.get('description', '')).classes('w-full')
+            else:
+                ui.label('Description').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case.get('description', 'N/A')).classes('')
+            
+            # Expected Benefit
+            if can_edit:
+                benefit_input = ui.textarea('Expected Benefit', value=use_case.get('expected_benefit', '')).classes('w-full')
+            else:
+                ui.label('Expected Benefit').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case.get('expected_benefit', 'N/A')).classes('')
+            
+            # Status
+            if can_edit:
+                status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed', 'archived']
+                status_select = ui.select(status_options, value=use_case['status'], label='Status').classes('w-full')
+            else:
+                ui.label('Status').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case['status'].replace('_', ' ').title()).classes('')
+            
+            # Company (read-only for now - could make dropdown later)
+            ui.label('Company').classes('text-sm font-medium text-gray-600')
+            ui.label(use_case['company_name']).classes('')
+            
+            # Industry (read-only)
+            ui.label('Industry').classes('text-sm font-medium text-gray-600')
+            ui.label(use_case['industry_name']).classes('')
+            
+            # Contributors
+            ui.label('Contributors').classes('text-sm font-medium text-gray-600')
+            if contributors:
+                for person in contributors:
+                    ui.label(f"• {person['name']} ({person['role']})").classes('text-sm')
+            else:
+                ui.label('No contributors listed').classes('text-sm italic text-gray-400')
+            
+            # Action buttons
+            with ui.row().classes('w-full gap-2 mt-4'):
+                if can_edit:
+                    def update_use_case():
+                        try:
+                            service.update_use_case(
+                                use_case_id=use_case['id'],
+                                title=title_input.value,
+                                description=desc_input.value,
+                                expected_benefit=benefit_input.value,
+                                status=status_select.value,
+                                current_user=current_user
+                            )
+                            ui.notify('Use case updated successfully!', type='positive')
+                            dialog.close()
+                            ui.navigate.to('/')  # Refresh page
+                        except Exception as e:
+                            ui.notify(f'Error updating: {e}', type='negative')
+                    
+                    ui.button('Update', on_click=update_use_case, icon='save').classes('flex-1')
+                
+                if can_delete:
+                    def delete_use_case():
+                        try:
+                            service.delete_use_case(use_case['id'], current_user=current_user)
+                            ui.notify('Use case deleted successfully!', type='positive')
+                            dialog.close()
+                            ui.navigate.to('/')  # Refresh page
+                        except Exception as e:
+                            ui.notify(f'Error deleting: {e}', type='negative')
+                    
+                    ui.button('Delete', on_click=delete_use_case, icon='delete', color='red').props('outline')
+                
+                ui.button('Close', on_click=dialog.close).props('outline')
+    
+    dialog.open()
 
 def show_main_app():
     """  
@@ -233,13 +354,49 @@ def show_main_app():
                     f'{role_color} text-white px-3 py-1 rounded text-sm'
                 )
             
-            # Logout button
+            # Upload Transcript button (only for maintainer/admin)
+            if check_permission(current_user, 'create'):
+                async def handle_upload(e):
+                    try:
+                        # Read uploaded file (async!)
+                        content = (await e.file.read()).decode('utf-8')
+
+                        from extraction import process_transcript
+                        from agent.tool_executor import set_current_user
+
+                        set_current_user(current_user)
+                        ui.notify('Processing transcript...', type='info')
+
+                        result = process_transcript(content, verbose=True)
+
+                        if result['success']:
+                            ui.notify(
+                                f'Success! Created {result["use_cases_created"]} use case(s)',
+                                type='positive'
+                            )
+                            ui.navigate.to('/')
+                        else:
+                            ui.notify('No use cases found in transcript', type='warning')
+
+                    except Exception as error:
+                        ui.notify(f'Error: {error}', type='negative')
+                        import traceback
+                        print(traceback.format_exc())
+
+                
+                ui.upload(
+                    on_upload=handle_upload,
+                    auto_upload=True,
+                    label='Upload Transcript'
+                ).props('flat color=white accept=.txt').tooltip('Upload workshop transcript (.txt)')
+            
+            # Logout button (OUTSIDE the if block, at the same level)
             def logout():
                 app.storage.user['current_user'] = None
                 app.storage.user['conversation_history'] = []
                 ui.notify('Logged out successfully', type='info')
                 ui.navigate.to('/')
-
+            
             ui.button('Logout', on_click=logout, icon='logout').props('flat color=white')
     
     # === MAIN CONTENT AREA ===
@@ -250,7 +407,7 @@ def show_main_app():
             ui.label('Chat with AI Agent').classes('text-lg font-bold')
             
             # Chat messages container
-            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded')
+            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded max-h-[500px]')
             
             with chat_container:
                 # Get conversation history
@@ -270,9 +427,10 @@ def show_main_app():
                     for msg in history:
                         if msg['role'] == 'user':
                             # User message (right-aligned, blue)
-                            with ui.row().classes('justify-end mb-2'):
+
+                            with ui.row().classes('w-full mb-2'):
                                 ui.label(msg['content']).classes(
-                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] ml-auto'
                                 )
                         else:
                             # Agent message (left-aligned, gray)
@@ -282,7 +440,8 @@ def show_main_app():
                                 )
             
             # Input area at bottom
-            with ui.row().classes('gap-2 items-end'):
+            #with ui.row().classes('gap-2 items-end'):
+            with ui.row().classes('w-full gap-2 items-end'):
                 message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
                 
                 # Enable pressing Enter to send
@@ -314,6 +473,7 @@ def show_main_app():
                     {'name': 'title', 'label': 'Title', 'field': 'title', 'align': 'left', 'sortable': True},
                     {'name': 'company', 'label': 'Company', 'field': 'company_name', 'align': 'left', 'sortable': True},
                     {'name': 'status', 'label': 'Status', 'field': 'status', 'align': 'left', 'sortable': True},
+                    {'name': 'actions', 'label': '', 'field': 'id', 'align': 'center'},  # Actions column
                 ]
                 
                 # Create table
@@ -324,8 +484,170 @@ def show_main_app():
                     pagination={'rowsPerPage': 10, 'sortBy': 'id'}
                 ).classes('w-full')
                 
+                # Add "View" button to each row
+                table.add_slot('body-cell-actions', '''
+                    <q-td :props="props">
+                        <q-btn flat dense round icon="visibility" size="sm" color="primary" @click="$parent.$emit('view', props.row)" />
+                    </q-td>
+                ''')
+                
+                # Handle view button click
+                table.on('view', lambda e: show_use_case_details(e.args, current_user))
+                
             except Exception as e:
                 ui.label(f'Error loading use cases: {e}').classes('text-red-500')
+
+    # === CREATION FORMS SECTION (Below main content) ===
+    # Only show to users with create permission
+    if check_permission(current_user, 'create'):
+        
+        ui.separator().classes('my-6')
+        
+        ui.label('Create New Entities').classes('text-xl font-bold mb-4')
+        
+        with ui.row().classes('w-full gap-4'):
+            # Left column - Simple entities
+            with ui.column().classes('flex-1 gap-2'):
+                
+                # Create Industry
+                with ui.expansion('Create Industry', icon='category').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        industry_name = ui.input('Industry Name', placeholder='e.g., Automotive').classes('w-full')
+                        
+                        def create_industry():
+                            try:
+                                service.create_industry(industry_name.value, current_user=current_user)
+                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive')
+                                industry_name.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Industry', on_click=create_industry, icon='add')
+                
+                # Create Company
+                with ui.expansion('Create Company', icon='business').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        company_name = ui.input('Company Name', placeholder='e.g., Tesla').classes('w-full')
+                        
+                        # Get industries for dropdown
+                        industries = service.get_all_industries(current_user=current_user)
+                        industry_options = {ind['id']: ind['name'] for ind in industries}
+                        
+                        company_industry = ui.select(
+                            options=industry_options,
+                            label='Industry'
+                        ).classes('w-full')
+                        
+                        def create_company():
+                            try:
+                                if not company_industry.value:
+                                    ui.notify('Please select an industry', type='warning')
+                                    return
+                                
+                                service.create_company(
+                                    company_name.value, 
+                                    company_industry.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Company "{company_name.value}" created!', type='positive')
+                                company_name.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Company', on_click=create_company, icon='add')
+                
+                # Create Person
+                with ui.expansion('Create Person', icon='person_add').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        person_name = ui.input('Person Name', placeholder='e.g., John Doe').classes('w-full')
+                        person_role = ui.input('Role', placeholder='e.g., CTO').classes('w-full')
+                        
+                        # Get companies for dropdown
+                        companies = service.get_all_companies(current_user=current_user)
+                        company_options = {comp['id']: comp['name'] for comp in companies}
+                        
+                        person_company = ui.select(
+                            options=company_options,
+                            label='Company'
+                        ).classes('w-full')
+                        
+                        def create_person():
+                            try:
+                                if not person_company.value:
+                                    ui.notify('Please select a company', type='warning')
+                                    return
+                                
+                                service.create_person(
+                                    person_name.value,
+                                    person_role.value,
+                                    person_company.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Person "{person_name.value}" created!', type='positive')
+                                person_name.value = ''
+                                person_role.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Person', on_click=create_person, icon='add')
+            
+            # Right column - Use Case creation
+            with ui.column().classes('flex-1 gap-2'):
+                
+                with ui.expansion('Create Use Case', icon='note_add').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        uc_title = ui.input('Title', placeholder='Use Case Title').classes('w-full')
+                        uc_desc = ui.textarea('Description', placeholder='Detailed description...').classes('w-full')
+                        uc_benefit = ui.textarea('Expected Benefit', placeholder='Expected benefits...').classes('w-full')
+                        
+                        # Dropdowns
+                        uc_company = ui.select(
+                            options=company_options,
+                            label='Company'
+                        ).classes('w-full')
+                        
+                        uc_industry = ui.select(
+                            options=industry_options,
+                            label='Industry'
+                        ).classes('w-full')
+                        
+                        status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed']
+                        uc_status = ui.select(
+                            options=status_options,
+                            value='new',
+                            label='Status'
+                        ).classes('w-full')
+                        
+                        def create_use_case_manual():
+                            try:
+                                if not uc_title.value:
+                                    ui.notify('Title is required', type='warning')
+                                    return
+                                if not uc_company.value or not uc_industry.value:
+                                    ui.notify('Company and Industry are required', type='warning')
+                                    return
+                                
+                                service.create_use_case(
+                                    title=uc_title.value,
+                                    company_id=uc_company.value,
+                                    industry_id=uc_industry.value,
+                                    description=uc_desc.value,
+                                    expected_benefit=uc_benefit.value,
+                                    status=uc_status.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Use case "{uc_title.value}" created!', type='positive')
+                                uc_title.value = ''
+                                uc_desc.value = ''
+                                uc_benefit.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Use Case', on_click=create_use_case_manual, icon='add').classes('w-full')
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
