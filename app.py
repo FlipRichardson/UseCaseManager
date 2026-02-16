@@ -283,6 +283,60 @@ def show_use_case_details(use_case_data, current_user):
                     ui.label(f"• {person['name']} ({person['role']})").classes('text-sm')
             else:
                 ui.label('No contributors listed').classes('text-sm italic text-gray-400')
+
+            # Add person section (only if can edit)
+            if can_edit:
+                ui.separator().classes('my-2')
+                ui.label('Add Contributor').classes('text-sm font-medium text-gray-600')
+                
+                # Get all persons from the same company
+                all_persons = service.get_all_persons(current_user=current_user)
+                
+                # Filter to same company and exclude already added
+                contributor_ids = {p['id'] for p in contributors}
+                available_persons = [
+                    p for p in all_persons 
+                    if p['company_id'] == use_case['company_id'] and p['id'] not in contributor_ids
+                ]
+                
+                if available_persons:
+                    # Create dropdown options
+                    person_options = {p['id']: f"{p['name']} ({p['role']})" for p in available_persons}
+                    
+                    with ui.row().classes('w-full gap-2 items-center'):
+                        person_select = ui.select(
+                            options=person_options,
+                            label='Select person from company'
+                        ).classes('flex-1')
+                        
+                        def add_person_to_use_case():
+                            if not person_select.value:
+                                ui.notify('Please select a person', type='warning')
+                                return
+                            
+                            try:
+                                result = service.add_persons_to_use_case(
+                                    use_case['id'],
+                                    [person_select.value],
+                                    current_user=current_user
+                                )
+                                
+                                # Get the person name for better feedback
+                                person_name = person_options[person_select.value]
+                                
+                                ui.notify(
+                                    f'{person_name} added successfully! Refresh to see changes.', 
+                                    type='positive',
+                                    position='top'
+                                )
+                                dialog.close()
+                                
+                            except Exception as e:
+                                ui.notify(f'Error adding person: {e}', type='negative')
+                        
+                        ui.button('Add', on_click=add_person_to_use_case, icon='person_add').props('dense')
+                else:
+                    ui.label('No additional persons available from this company').classes('text-sm text-gray-400 italic')
             
             # Action buttons
             with ui.row().classes('w-full gap-2 mt-4'):
