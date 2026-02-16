@@ -163,7 +163,7 @@ def send_message(message_input, chat_container):
     with chat_container:
         with ui.row().classes('w-full mb-2'):
             ui.label(user_message).classes(
-                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] whitespace-pre-wrap'
             )
     
     # Call agent (without verbose output)
@@ -189,8 +189,6 @@ def send_message(message_input, chat_container):
         
         # Save history
         app.storage.user['conversation_history'] = history
-
-        ui.navigate.to('/')  # Simple refresh for now
         
         # Scroll to bottom
         chat_container.run_method('scrollTo', 0, 99999)
@@ -436,7 +434,7 @@ def show_main_app():
                             # Agent message (left-aligned, gray)
                             with ui.row().classes('justify-start mb-2'):
                                 ui.label(msg['content']).classes(
-                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%]'
+                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%] whitespace-pre-wrap'
                                 )
             
             # Input area at bottom
