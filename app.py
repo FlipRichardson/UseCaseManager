@@ -4,6 +4,9 @@ from services.user_service import UserService
 # init user service
 user_service = UserService()
 
+# Global storage for UI elements (can't be stored in app.storage)
+ui_elements = {}  # ← ADD THIS LINE
+
 @ui.page('/')
 def index_page():
     """
@@ -133,8 +136,31 @@ def handle_register(email: str, password: str, error_label):
         error_label.text = str(e)
         error_label.visible = True
 
-def send_message(message_input, chat_container):
-    """Handle sending a message to the agent"""
+def refresh_use_case_table():
+    """Refresh the use case table without reloading the page"""
+    try:
+        # Get current user and table reference
+        current_user = app.storage.user.get('current_user')
+        table = ui_elements.get('use_case_table')
+        
+        if not table:
+            return  # Table not initialized yet
+        
+        # Fetch fresh data
+        from services import UseCaseService
+        service = UseCaseService()
+        use_cases = service.get_all_use_cases(current_user=current_user)
+        
+        # Update table rows
+        table.rows = use_cases
+        table.update()
+        
+    except Exception as e:
+        print(f"Error refreshing table: {e}")
+
+async def send_message(message_input, chat_container):
+    """Handle sending a message to the agent (async to prevent UI freeze)"""
+    import asyncio
     from agent import run_agent
     from agent.tool_executor import set_current_user
     
@@ -163,16 +189,36 @@ def send_message(message_input, chat_container):
     with chat_container:
         with ui.row().classes('w-full mb-2'):
             ui.label(user_message).classes(
-                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] ml-auto'
             )
     
-    # Call agent (without verbose output)
+    # Show "Agent is thinking..." message
+    with chat_container:
+        thinking_row = ui.row().classes('justify-start mb-2')
+        with thinking_row:
+            thinking_label = ui.label('🤔 Agent is thinking...').classes(
+                'bg-gray-100 px-4 py-2 rounded-lg border italic animate-pulse'
+            )
+    
+    # Scroll to show thinking message
+    chat_container.run_method('scrollTo', 0, 99999)
+    
+    # Run agent in background thread (prevents UI freeze)
     try:
-        # Build conversation history for agent (only user/assistant messages)
-        agent_history = [msg for msg in history]  # Copy history
-
-        # Call agent with full conversation context
-        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=True, max_rounds=10)
+        # Build conversation history
+        agent_history = [msg for msg in history]
+        
+        # Run agent in executor (separate thread, non-blocking)
+        agent_response = await asyncio.to_thread(
+            run_agent,
+            user_message,
+            conversation_history=agent_history[:-1],
+            verbose=True,
+            max_rounds=10
+        )
+        
+        # Remove "thinking..." message
+        thinking_row.delete()
         
         # Add agent response to history
         history.append({
@@ -189,13 +235,17 @@ def send_message(message_input, chat_container):
         
         # Save history
         app.storage.user['conversation_history'] = history
-
-        ui.navigate.to('/')  # Simple refresh for now
         
         # Scroll to bottom
         chat_container.run_method('scrollTo', 0, 99999)
+
+        # Refresh just the table
+        await asyncio.sleep(0.3)  # Small delay
+        refresh_use_case_table()
         
     except Exception as e:
+        # Remove "thinking..." message
+        thinking_row.delete()
         
         # Show error
         with chat_container:
@@ -285,6 +335,60 @@ def show_use_case_details(use_case_data, current_user):
                     ui.label(f"• {person['name']} ({person['role']})").classes('text-sm')
             else:
                 ui.label('No contributors listed').classes('text-sm italic text-gray-400')
+
+            # Add person section (only if can edit)
+            if can_edit:
+                ui.separator().classes('my-2')
+                ui.label('Add Contributor').classes('text-sm font-medium text-gray-600')
+                
+                # Get all persons from the same company
+                all_persons = service.get_all_persons(current_user=current_user)
+                
+                # Filter to same company and exclude already added
+                contributor_ids = {p['id'] for p in contributors}
+                available_persons = [
+                    p for p in all_persons 
+                    if p['company_id'] == use_case['company_id'] and p['id'] not in contributor_ids
+                ]
+                
+                if available_persons:
+                    # Create dropdown options
+                    person_options = {p['id']: f"{p['name']} ({p['role']})" for p in available_persons}
+                    
+                    with ui.row().classes('w-full gap-2 items-center'):
+                        person_select = ui.select(
+                            options=person_options,
+                            label='Select person from company'
+                        ).classes('flex-1')
+                        
+                        def add_person_to_use_case():
+                            if not person_select.value:
+                                ui.notify('Please select a person', type='warning')
+                                return
+                            
+                            try:
+                                result = service.add_persons_to_use_case(
+                                    use_case['id'],
+                                    [person_select.value],
+                                    current_user=current_user
+                                )
+                                
+                                # Get the person name for better feedback
+                                person_name = person_options[person_select.value]
+                                
+                                ui.notify(
+                                    f'{person_name} added successfully! Refresh to see changes.', 
+                                    type='positive',
+                                    position='top'
+                                )
+                                dialog.close()
+                                
+                            except Exception as e:
+                                ui.notify(f'Error adding person: {e}', type='negative')
+                        
+                        ui.button('Add', on_click=add_person_to_use_case, icon='person_add').props('dense')
+                else:
+                    ui.label('No additional persons available from this company').classes('text-sm text-gray-400 italic')
             
             # Action buttons
             with ui.row().classes('w-full gap-2 mt-4'):
@@ -357,29 +461,81 @@ def show_main_app():
             # Upload Transcript button (only for maintainer/admin)
             if check_permission(current_user, 'create'):
                 async def handle_upload(e):
+                    import asyncio
+                    
                     try:
                         # Read uploaded file (async!)
                         content = (await e.file.read()).decode('utf-8')
-
-                        from extraction import process_transcript
+                        
+                        from extraction.transcript_processor import extract_prompts_from_transcript
+                        from agent import run_agent
                         from agent.tool_executor import set_current_user
-
+                        
                         set_current_user(current_user)
-                        ui.notify('Processing transcript...', type='info')
-
-                        result = process_transcript(content, verbose=True)
-
-                        if result['success']:
-                            ui.notify(
-                                f'Success! Created {result["use_cases_created"]} use case(s)',
-                                type='positive'
-                            )
-                            ui.navigate.to('/')
-                        else:
+                        
+                        # Step 1: Extract prompts
+                        ui.notify('📄 Extracting use cases from transcript...', type='info', position='top')
+                        
+                        # Run extraction in background
+                        prompts = await asyncio.to_thread(
+                            extract_prompts_from_transcript,
+                            content,
+                            verbose=False
+                        )
+                        
+                        if not prompts:
                             ui.notify('No use cases found in transcript', type='warning')
-
+                            return
+                        
+                        ui.notify(f'✓ Found {len(prompts)} use case(s). Creating them...', type='positive', position='top')
+                        
+                        # Step 2: Process each prompt with agent
+                        successful = 0
+                        
+                        for i, prompt in enumerate(prompts, 1):
+                            ui.notify(
+                                f'Creating use case {i}/{len(prompts)}...', 
+                                type='info',
+                                position='top',
+                                timeout=2000
+                            )
+                            
+                            try:
+                                # Run agent in background
+                                await asyncio.to_thread(
+                                    run_agent,
+                                    prompt,
+                                    conversation_history=None,
+                                    verbose=True,
+                                    max_rounds=10
+                                )
+                                successful += 1
+                                
+                            except Exception as e:
+                                print(f"Error creating use case {i}: {e}")
+                                # Continue with next use case
+                        
+                        # Final notification
+                        if successful == len(prompts):
+                            ui.notify(
+                                f'🎉 Success! Created all {successful} use case(s)!',
+                                type='positive',
+                                position='top',
+                                timeout=5000
+                            )
+                        else:
+                            ui.notify(
+                                f'⚠️ Created {successful}/{len(prompts)} use case(s). Check console for errors.',
+                                type='warning',
+                                position='top',
+                                timeout=5000
+                            )
+                        
+                        # Refresh table to show new use cases
+                        refresh_use_case_table()
+                        
                     except Exception as error:
-                        ui.notify(f'Error: {error}', type='negative')
+                        ui.notify(f'Error processing transcript: {error}', type='negative')
                         import traceback
                         print(traceback.format_exc())
 
@@ -436,7 +592,7 @@ def show_main_app():
                             # Agent message (left-aligned, gray)
                             with ui.row().classes('justify-start mb-2'):
                                 ui.label(msg['content']).classes(
-                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%]'
+                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%] whitespace-pre-wrap'
                                 )
             
             # Input area at bottom
@@ -444,9 +600,9 @@ def show_main_app():
             with ui.row().classes('w-full gap-2 items-end'):
                 message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
                 
-                # Enable pressing Enter to send
+                # Enable pressing Enter to send (async)
                 message_input.on('keydown.enter', lambda: send_message(message_input, chat_container))
-                
+
                 send_btn = ui.button('Send', icon='send', on_click=lambda: send_message(message_input, chat_container))
         
         # RIGHT COLUMN - Table (40%)
@@ -455,10 +611,7 @@ def show_main_app():
                 ui.label('Use Cases').classes('text-lg font-bold')
                 
                 # Refresh button
-                def refresh_table():
-                    ui.navigate.to('/')  # Simple refresh for now
-                
-                ui.button(icon='refresh', on_click=refresh_table).props('flat dense').tooltip('Refresh table')
+                ui.button(icon='refresh', on_click=refresh_use_case_table).props('flat dense').tooltip('Refresh table')
             
             # Table
             from services import UseCaseService
@@ -483,6 +636,9 @@ def show_main_app():
                     row_key='id',
                     pagination={'rowsPerPage': 10, 'sortBy': 'id'}
                 ).classes('w-full')
+
+                # Store table reference in global dict (can't use app.storage for UI elements)
+                ui_elements['use_case_table'] = table
                 
                 # Add "View" button to each row
                 table.add_slot('body-cell-actions', '''
@@ -648,6 +804,73 @@ def show_main_app():
                                 ui.notify(f'Error: {e}', type='negative')
                         
                         ui.button('Create Use Case', on_click=create_use_case_manual, icon='add').classes('w-full')
+
+    # === USER MANAGEMENT SECTION (Admin only) ===
+    if check_permission(current_user, 'manage_users'):
+        
+        ui.separator().classes('my-6')
+        
+        ui.label('User Management').classes('text-xl font-bold mb-4')
+        
+        # Get all users
+        from services.user_service import UserService
+        user_service = UserService()
+        all_users = user_service.get_all_users()
+        
+        # User table
+        user_columns = [
+            {'name': 'id', 'label': 'ID', 'field': 'id', 'align': 'left'},
+            {'name': 'email', 'label': 'Email', 'field': 'email', 'align': 'left'},
+            {'name': 'name', 'label': 'Name', 'field': 'name', 'align': 'left'},
+            {'name': 'role', 'label': 'Role', 'field': 'role', 'align': 'left'},
+            {'name': 'actions', 'label': 'Actions', 'field': 'id', 'align': 'center'},
+        ]
+        
+        user_table = ui.table(
+            columns=user_columns,
+            rows=all_users,
+            row_key='id'
+        ).classes('w-full')
+        
+        # Add role change buttons to each row
+        user_table.add_slot('body-cell-actions', '''
+            <q-td :props="props">
+                <q-btn-group flat>
+                    <q-btn flat dense size="sm" label="Reader" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'reader'})" :color="props.row.role === 'reader' ? 'primary' : 'grey'" />
+                    <q-btn flat dense size="sm" label="Maintainer" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'maintainer'})" :color="props.row.role === 'maintainer' ? 'primary' : 'grey'" />
+                    <q-btn flat dense size="sm" label="Admin" @click="$parent.$emit('set_role', {user_id: props.row.id, role: 'admin'})" :color="props.row.role === 'admin' ? 'primary' : 'grey'" />
+                </q-btn-group>
+            </q-td>
+        ''')
+        
+        # Handle role change
+        def change_user_role(e):
+            user_id = e.args['user_id']
+            new_role = e.args['role']
+            
+            try:
+                # Update user role in database
+                from models.base import SessionLocal
+                from models.user import User
+                
+                db = SessionLocal()
+                try:
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user:
+                        old_role = user.role
+                        user.role = new_role
+                        db.commit()
+                        ui.notify(f'User {user.email} role changed from {old_role} to {new_role}', type='positive')
+                        ui.navigate.to('/')  # Refresh
+                    else:
+                        ui.notify('User not found', type='negative')
+                finally:
+                    db.close()
+                    
+            except Exception as error:
+                ui.notify(f'Error changing role: {error}', type='negative')
+        
+        user_table.on('set_role', change_user_role)
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
