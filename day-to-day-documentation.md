@@ -121,3 +121,12 @@
     - some service functions to add to the database and veryfy user
     - added some dummy users to the test database
     - tested user log in and creation
+    - Plan: Simple global user, no session management due to time restrictions
+
+Day 5 (16.02. Morning):
+- Permissions: integrate user/user rights into service layer -> catch permission even if the user asks agent to do one job
+    - utils/permission -> simple check function - require_permission(user, action) -> checks if user.role is allowed to perform action, e.g. "write"/"delete"
+    - update service methods to use permissions -> calls require_permission with current user (added to methods arguments) and type of action
+    - agent tool executor not only needs to call the functions the agent asks but also needs to pass on the current user (global variable)
+    - test: worked, reader can only read, maintainer verything but dlete and archive
+    - user rights change will be done later
