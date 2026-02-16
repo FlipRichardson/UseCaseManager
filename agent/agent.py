@@ -17,7 +17,7 @@ client = OpenAI(
 )
 
 
-def run_agent(user_message: str, verbose: bool = True, max_rounds: int = 10):
+def run_agent(user_message: str, conversation_history: list = None, verbose: bool = True, max_rounds: int = 10):
     """
     Run the agent with multi-round tool calling support.
     
@@ -33,8 +33,14 @@ def run_agent(user_message: str, verbose: bool = True, max_rounds: int = 10):
     Returns:
         str: The agent's final response
     """
-    # Start with user message
-    messages = [{"role": "user", "content": user_message}]
+    # Start with history or empty
+    if conversation_history:
+        messages = conversation_history.copy()
+    else:
+        messages = []
+
+    # Add new user message
+    messages.append({"role": "user", "content": user_message})
     
     if verbose:
         print(f"\n{'='*60}")

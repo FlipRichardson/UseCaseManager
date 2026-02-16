@@ -168,7 +168,11 @@ def send_message(message_input, chat_container):
     
     # Call agent (without verbose output)
     try:
-        agent_response = run_agent(user_message, verbose=False, max_rounds=10)
+        # Build conversation history for agent (only user/assistant messages)
+        agent_history = [msg for msg in history]  # Copy history
+
+        # Call agent with full conversation context
+        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=False, max_rounds=10)
         
         # Add agent response to history
         history.append({
