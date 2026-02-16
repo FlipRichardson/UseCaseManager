@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Any
 from models.base import SessionLocal
 from models import UseCase, Company, Industry, Person
+from utils.permissions import require_permission
 
 
 class UseCaseService:
@@ -65,10 +66,8 @@ class UseCaseService:
             "industry_id": use_case.industry_id,
             "industry_name": use_case.industry.name
         }
-
-
     
-    def get_all_use_cases(self) -> List[Dict[str, Any]]: 
+    def get_all_use_cases(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
         Retrieve all use cases from the database.
     
@@ -84,6 +83,9 @@ class UseCaseService:
                 - industry_id: Associated industry ID
                 - industry_name: Associated industry name
         """
+        # check user rights
+        require_permission(current_user, 'read')
+
         # get db
         db = self._get_session()
 
@@ -94,7 +96,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def get_use_case_by_id(self, use_case_id : int) -> Optional[Dict[str, Any]]:
+    def get_use_case_by_id(self, use_case_id : int, current_user : dict = None) -> Optional[Dict[str, Any]]:
         """
         Retreive an use case dict by providing its ID. 
 
@@ -104,6 +106,9 @@ class UseCaseService:
         Returns:
             Dict[str, Any] : Dictionary about use case info
         """
+        # check user rights
+        require_permission(current_user, 'read')
+
         db = self._get_session()
 
         try: 
@@ -116,7 +121,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def create_use_case(self, title : str, company_id : int, industry_id : int, description : str = None, expected_benefit : str = None, status : str  = 'new') -> Dict[str, Any]:
+    def create_use_case(self, title : str, company_id : int, industry_id : int, description : str = None, expected_benefit : str = None, status : str  = 'new', current_user : dict = None) -> Dict[str, Any]:
         """  
         Create new use case in the database.
 
@@ -131,6 +136,8 @@ class UseCaseService:
         Returns:
             Dict[str, Any] : Informatzion dictionary of use case created    
         """
+        # check user rights
+        require_permission(current_user, "create")
 
         db = self._get_session()
 
@@ -186,7 +193,8 @@ class UseCaseService:
             expected_benefit : Optional[str] = None, 
             status : Optional[str] = None, 
             company_id : Optional[int] = None, 
-            industry_id : Optional[int] = None
+            industry_id : Optional[int] = None,
+            current_user : dict = None
             ) -> Dict[str, Any]:
         """ 
         Update an use case specified by use_case id. Only arguments provided will be updated. 
@@ -203,6 +211,8 @@ class UseCaseService:
         Returns:
             Dict[str, Any]: Dictionary containing the updated use case information
         """
+        # check user rights
+        require_permission(current_user, "update")
         
         db = self._get_session()
 
@@ -261,7 +271,7 @@ class UseCaseService:
             db.close()
 
 
-    def update_use_case_status(self, use_case_id : int, status : str) -> Dict[str, Any]: 
+    def update_use_case_status(self, use_case_id : int, status : str, current_user : dict = None) -> Dict[str, Any]: 
         """ 
         Update the status of an use case specifed by the ID. 
 
@@ -271,9 +281,33 @@ class UseCaseService:
         Reurns:
             Dict[str, Any] : Updated use case .
         """
-        return self.update_use_case(use_case_id = use_case_id, status = status)
+        # Special case: archiving requires admin permission
+        if status == "archived":
+            require_permission(current_user, 'archive')  # Admin only
+        else:
+            require_permission(current_user, 'update')  # Maintainer or admin
+        
+        # Now update (don't call update_use_case to avoid double permission check)
+        db = self._get_session()
+        try:
+            use_case = db.query(UseCase).filter(UseCase.id == use_case_id).first()
+            if not use_case:
+                raise ValueError(f"Use case with ID {use_case_id} not found.")
+            
+            self._validate_status(status)
+            use_case.status = status
+            
+            db.commit()
+            db.refresh(use_case)
+            
+            return self._use_case_to_dict(use_case)
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
     
-    def delete_use_case(self, use_case_id : int) -> Dict[str, Any]:
+    def delete_use_case(self, use_case_id : int, current_user : dict = None) -> Dict[str, Any]:
         """ 
         Delete one use case from the database and returns its informatin  for the last time.
 
@@ -283,6 +317,7 @@ class UseCaseService:
         Returns:
             dict of informatin of te use case that has been deleted.
         """
+        require_permission(current_user, "delete")
 
         db = self._get_session()
 
@@ -312,7 +347,8 @@ class UseCaseService:
             company_id : Optional[int] = None, 
             industry_id : Optional[int] = None, 
             status : Optional[str] = None, 
-            person_id : Optional[int] = None
+            person_id : Optional[int] = None,
+            current_user : dict = None
     ) -> List[Dict[str, Any]]: 
         """ 
         Filter use cases by various criteria.
@@ -327,7 +363,7 @@ class UseCaseService:
         Returns:
             List of use cases matching the filters
         """
-
+        require_permission(current_user, "read")
         db = self._get_session()
 
         try:
@@ -358,7 +394,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def archive_use_case(self, use_case_id : int) -> Dict[str, Any]: 
+    def archive_use_case(self, use_case_id : int, current_user : dict = None) -> Dict[str, Any]: 
         """
         Sets the status of a use case to archived. 
 
@@ -368,9 +404,10 @@ class UseCaseService:
         Returns:
             Dict[str, Any] : Dict of the use case that has been archived
         """ 
-        return self.update_use_case_status(use_case_id, "archived")
+        return self.update_use_case_status(use_case_id, "archived", current_user)
+
     
-    def get_all_industries(self) -> List[Dict[str, Any]]:
+    def get_all_industries(self, current_user : dict = None) -> List[Dict[str, Any]]:
         """  
         Get all industries with their IDs and names.
 
@@ -379,6 +416,7 @@ class UseCaseService:
                 - id: Industry ID
                 - name: Industry name
         """
+        require_permission(current_user, "read")
         db = self._get_session()
 
         try: 
@@ -388,7 +426,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def get_all_companies(self) -> List[Dict[str, Any]]: 
+    def get_all_companies(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
         Get all companies with their IDs, names, and industry information.
         
@@ -399,6 +437,7 @@ class UseCaseService:
                 - industry_id: Associated industry ID
                 - industry_name: Associated industry name
         """
+        require_permission(current_user, "read")
         db = self._get_session()
 
         try: 
@@ -412,7 +451,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def get_all_persons(self) -> List[Dict[str, Any]]: 
+    def get_all_persons(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """ 
         Get all persons with their IDs, names, roles, and company information.
         
@@ -424,6 +463,7 @@ class UseCaseService:
                 - company_id: Associated company ID
                 - company_name: Associated company name
         """
+        require_permission(current_user, "read")
         db = self._get_session()
 
         try:
@@ -439,7 +479,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def get_persons_by_use_case(self, use_case_id : int) -> List[Dict[str, Any]]: 
+    def get_persons_by_use_case(self, use_case_id : int, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
         Get all persons who contributed to a specific use case.
         
@@ -453,6 +493,7 @@ class UseCaseService:
                 - role: Person's role/position
                 - company_name: Associated company name
         """
+        require_permission(current_user, "read")
         db = self._get_session()
 
         try: 
@@ -470,7 +511,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def create_industry(self, name: str) -> Dict[str, Any]:
+    def create_industry(self, name: str, current_user : dict = None) -> Dict[str, Any]:
         """
         Create a new industry.
         
@@ -483,6 +524,7 @@ class UseCaseService:
         Raises:
             ValueError: If industry with this name already exists
         """
+        require_permission(current_user, "create")
         db = self._get_session()
         try:
             # Check if already exists
@@ -503,7 +545,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def create_company(self, name: str, industry_id: int) -> Dict[str, Any]:
+    def create_company(self, name: str, industry_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
         Create a new company.
         
@@ -517,6 +559,7 @@ class UseCaseService:
         Raises:
             ValueError: If company already exists or industry doesn't exist
         """
+        require_permission(current_user, "create")
         db = self._get_session()
         try:
             # Check if industry exists
@@ -547,7 +590,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def create_person(self, name: str, role: str, company_id: int) -> Dict[str, Any]:
+    def create_person(self, name: str, role: str, company_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
         Create a new person.
         
@@ -562,6 +605,7 @@ class UseCaseService:
         Raises:
             ValueError: If company doesn't exist
         """
+        require_permission(current_user, "create")
         db = self._get_session()
         try:
             # Check if company exists
@@ -589,7 +633,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def find_or_create_industry(self, name: str) -> Dict[str, Any]:
+    def find_or_create_industry(self, name: str, current_user : dict = None) -> Dict[str, Any]:
         """
         Find existing industry by name, or create if doesn't exist.
         Case-insensitive search.
@@ -600,6 +644,7 @@ class UseCaseService:
         Returns:
             Dict[str, Any]: Industry info (existing or newly created)
         """
+        require_permission(current_user, "read")
         db = self._get_session()
         try:
             # Try to find existing (case-insensitive)
@@ -610,6 +655,8 @@ class UseCaseService:
             if industry:
                 return {"id": industry.id, "name": industry.name}
             
+            # restricted area - from here onwards its writing
+            require_permission(current_user, "create")
             # Create new
             industry = Industry(name=name)
             db.add(industry)
@@ -620,7 +667,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def find_or_create_company(self, name: str, industry_name: str) -> Dict[str, Any]:
+    def find_or_create_company(self, name: str, industry_name: str, current_user : dict = None) -> Dict[str, Any]:
         """
         Find existing company by name, or create if doesn't exist.
         Also ensures industry exists (creates if needed).
@@ -633,6 +680,7 @@ class UseCaseService:
         Returns:
             Dict[str, Any]: Company info (existing or newly created)
         """
+        require_permission(current_user, "read")
         db = self._get_session()
         try:
             # Try to find existing company
@@ -649,6 +697,7 @@ class UseCaseService:
                 }
             
             # Need to create - first ensure industry exists
+            require_permission(current_user, "create")
             industry = db.query(Industry).filter(
                 Industry.name.ilike(industry_name)
             ).first()
@@ -674,7 +723,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def find_or_create_person(self, name: str, role: str, company_id: int) -> Dict[str, Any]:
+    def find_or_create_person(self, name: str, role: str, company_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
         Find existing person by name and company, or create if doesn't exist.
         Updates role if person exists but role has changed.
@@ -687,6 +736,7 @@ class UseCaseService:
         Returns:
             Dict[str, Any]: Person info (existing or newly created)
         """
+        require_permission(current_user, "read")
         db = self._get_session()
         try:
             # Try to find existing person at this company
@@ -711,6 +761,7 @@ class UseCaseService:
                 }
             
             # Create new
+            require_permission(current_user, "create")
             person = Person(name=name, role=role, company_id=company_id)
             db.add(person)
             db.commit()
@@ -726,7 +777,7 @@ class UseCaseService:
         finally:
             db.close()
 
-    def add_persons_to_use_case(self, use_case_id: int, person_ids: List[int]) -> Dict[str, Any]:
+    def add_persons_to_use_case(self, use_case_id: int, person_ids: List[int], current_user : dict = None) -> Dict[str, Any]:
         """
         Add persons to a use case (many-to-many relationship).
         Does NOT clear existing persons - only adds new ones.
@@ -741,6 +792,7 @@ class UseCaseService:
         Raises:
             ValueError: If use case doesn't exist
         """
+        require_permission(current_user, "edit")
         db = self._get_session()
         try:
             use_case = db.query(UseCase).filter(UseCase.id == use_case_id).first()
