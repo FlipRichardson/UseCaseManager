@@ -457,6 +457,158 @@ def show_main_app():
             except Exception as e:
                 ui.label(f'Error loading use cases: {e}').classes('text-red-500')
 
+    # === CREATION FORMS SECTION (Below main content) ===
+    # Only show to users with create permission
+    if check_permission(current_user, 'create'):
+        
+        ui.separator().classes('my-6')
+        
+        ui.label('Create New Entities').classes('text-xl font-bold mb-4')
+        
+        with ui.row().classes('w-full gap-4'):
+            # Left column - Simple entities
+            with ui.column().classes('flex-1 gap-2'):
+                
+                # Create Industry
+                with ui.expansion('Create Industry', icon='category').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        industry_name = ui.input('Industry Name', placeholder='e.g., Automotive').classes('w-full')
+                        
+                        def create_industry():
+                            try:
+                                service.create_industry(industry_name.value, current_user=current_user)
+                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive')
+                                industry_name.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Industry', on_click=create_industry, icon='add')
+                
+                # Create Company
+                with ui.expansion('Create Company', icon='business').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        company_name = ui.input('Company Name', placeholder='e.g., Tesla').classes('w-full')
+                        
+                        # Get industries for dropdown
+                        industries = service.get_all_industries(current_user=current_user)
+                        industry_options = {ind['id']: ind['name'] for ind in industries}
+                        
+                        company_industry = ui.select(
+                            options=industry_options,
+                            label='Industry'
+                        ).classes('w-full')
+                        
+                        def create_company():
+                            try:
+                                if not company_industry.value:
+                                    ui.notify('Please select an industry', type='warning')
+                                    return
+                                
+                                service.create_company(
+                                    company_name.value, 
+                                    company_industry.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Company "{company_name.value}" created!', type='positive')
+                                company_name.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Company', on_click=create_company, icon='add')
+                
+                # Create Person
+                with ui.expansion('Create Person', icon='person_add').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        person_name = ui.input('Person Name', placeholder='e.g., John Doe').classes('w-full')
+                        person_role = ui.input('Role', placeholder='e.g., CTO').classes('w-full')
+                        
+                        # Get companies for dropdown
+                        companies = service.get_all_companies(current_user=current_user)
+                        company_options = {comp['id']: comp['name'] for comp in companies}
+                        
+                        person_company = ui.select(
+                            options=company_options,
+                            label='Company'
+                        ).classes('w-full')
+                        
+                        def create_person():
+                            try:
+                                if not person_company.value:
+                                    ui.notify('Please select a company', type='warning')
+                                    return
+                                
+                                service.create_person(
+                                    person_name.value,
+                                    person_role.value,
+                                    person_company.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Person "{person_name.value}" created!', type='positive')
+                                person_name.value = ''
+                                person_role.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Person', on_click=create_person, icon='add')
+            
+            # Right column - Use Case creation
+            with ui.column().classes('flex-1 gap-2'):
+                
+                with ui.expansion('Create Use Case', icon='note_add').classes('w-full'):
+                    with ui.column().classes('gap-2 p-2'):
+                        uc_title = ui.input('Title', placeholder='Use Case Title').classes('w-full')
+                        uc_desc = ui.textarea('Description', placeholder='Detailed description...').classes('w-full')
+                        uc_benefit = ui.textarea('Expected Benefit', placeholder='Expected benefits...').classes('w-full')
+                        
+                        # Dropdowns
+                        uc_company = ui.select(
+                            options=company_options,
+                            label='Company'
+                        ).classes('w-full')
+                        
+                        uc_industry = ui.select(
+                            options=industry_options,
+                            label='Industry'
+                        ).classes('w-full')
+                        
+                        status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed']
+                        uc_status = ui.select(
+                            options=status_options,
+                            value='new',
+                            label='Status'
+                        ).classes('w-full')
+                        
+                        def create_use_case_manual():
+                            try:
+                                if not uc_title.value:
+                                    ui.notify('Title is required', type='warning')
+                                    return
+                                if not uc_company.value or not uc_industry.value:
+                                    ui.notify('Company and Industry are required', type='warning')
+                                    return
+                                
+                                service.create_use_case(
+                                    title=uc_title.value,
+                                    company_id=uc_company.value,
+                                    industry_id=uc_industry.value,
+                                    description=uc_desc.value,
+                                    expected_benefit=uc_benefit.value,
+                                    status=uc_status.value,
+                                    current_user=current_user
+                                )
+                                ui.notify(f'Use case "{uc_title.value}" created!', type='positive')
+                                uc_title.value = ''
+                                uc_desc.value = ''
+                                uc_benefit.value = ''
+                                ui.navigate.to('/')  # Refresh
+                            except Exception as e:
+                                ui.notify(f'Error: {e}', type='negative')
+                        
+                        ui.button('Create Use Case', on_click=create_use_case_manual, icon='add').classes('w-full')
+
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title='UseCase Manager', 
