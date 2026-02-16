@@ -4,6 +4,9 @@ from services.user_service import UserService
 # init user service
 user_service = UserService()
 
+# Global storage for UI elements (can't be stored in app.storage)
+ui_elements = {}  # ← ADD THIS LINE
+
 @ui.page('/')
 def index_page():
     """
@@ -133,6 +136,28 @@ def handle_register(email: str, password: str, error_label):
         error_label.text = str(e)
         error_label.visible = True
 
+def refresh_use_case_table():
+    """Refresh the use case table without reloading the page"""
+    try:
+        # Get current user and table reference
+        current_user = app.storage.user.get('current_user')
+        table = ui_elements.get('use_case_table')
+        
+        if not table:
+            return  # Table not initialized yet
+        
+        # Fetch fresh data
+        from services import UseCaseService
+        service = UseCaseService()
+        use_cases = service.get_all_use_cases(current_user=current_user)
+        
+        # Update table rows
+        table.rows = use_cases
+        table.update()
+        
+    except Exception as e:
+        print(f"Error refreshing table: {e}")
+
 async def send_message(message_input, chat_container):
     """Handle sending a message to the agent (async to prevent UI freeze)"""
     import asyncio
@@ -213,6 +238,10 @@ async def send_message(message_input, chat_container):
         
         # Scroll to bottom
         chat_container.run_method('scrollTo', 0, 99999)
+
+        # Refresh just the table
+        await asyncio.sleep(0.3)  # Small delay
+        refresh_use_case_table()
         
     except Exception as e:
         # Remove "thinking..." message
@@ -477,7 +506,7 @@ def show_main_app():
                                     run_agent,
                                     prompt,
                                     conversation_history=None,
-                                    verbose=False,
+                                    verbose=True,
                                     max_rounds=10
                                 )
                                 successful += 1
@@ -502,8 +531,8 @@ def show_main_app():
                                 timeout=5000
                             )
                         
-                        # Refresh page to show new use cases
-                        ui.navigate.to('/')
+                        # Refresh table to show new use cases
+                        refresh_use_case_table()
                         
                     except Exception as error:
                         ui.notify(f'Error processing transcript: {error}', type='negative')
@@ -582,10 +611,7 @@ def show_main_app():
                 ui.label('Use Cases').classes('text-lg font-bold')
                 
                 # Refresh button
-                def refresh_table():
-                    ui.navigate.to('/')  # Simple refresh for now
-                
-                ui.button(icon='refresh', on_click=refresh_table).props('flat dense').tooltip('Refresh table')
+                ui.button(icon='refresh', on_click=refresh_use_case_table).props('flat dense').tooltip('Refresh table')
             
             # Table
             from services import UseCaseService
@@ -610,6 +636,9 @@ def show_main_app():
                     row_key='id',
                     pagination={'rowsPerPage': 10, 'sortBy': 'id'}
                 ).classes('w-full')
+
+                # Store table reference in global dict (can't use app.storage for UI elements)
+                ui_elements['use_case_table'] = table
                 
                 # Add "View" button to each row
                 table.add_slot('body-cell-actions', '''
