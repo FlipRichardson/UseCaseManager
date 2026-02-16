@@ -288,11 +288,40 @@ def show_main_app():
         
         # RIGHT COLUMN - Table (40%)
         with ui.column().classes('flex-[2] gap-2'):
-            ui.label('Use Cases').classes('text-lg font-bold')
+            with ui.row().classes('w-full items-center justify-between'):
+                ui.label('Use Cases').classes('text-lg font-bold')
+                
+                # Refresh button
+                def refresh_table():
+                    ui.navigate.to('/')  # Simple refresh for now
+                
+                ui.button(icon='refresh', on_click=refresh_table).props('flat dense').tooltip('Refresh table')
             
-            # Table container (placeholder)
-            with ui.card().classes('flex-1 p-4'):
-                ui.label('Table will go here').classes('text-gray-500')
+            # Table
+            from services import UseCaseService
+            service = UseCaseService()
+            
+            try:
+                use_cases = service.get_all_use_cases(current_user=current_user)
+                
+                # Table columns
+                columns = [
+                    {'name': 'id', 'label': 'ID', 'field': 'id', 'align': 'left', 'sortable': True},
+                    {'name': 'title', 'label': 'Title', 'field': 'title', 'align': 'left', 'sortable': True},
+                    {'name': 'company', 'label': 'Company', 'field': 'company_name', 'align': 'left', 'sortable': True},
+                    {'name': 'status', 'label': 'Status', 'field': 'status', 'align': 'left', 'sortable': True},
+                ]
+                
+                # Create table
+                table = ui.table(
+                    columns=columns,
+                    rows=use_cases,
+                    row_key='id',
+                    pagination={'rowsPerPage': 10, 'sortBy': 'id'}
+                ).classes('w-full')
+                
+            except Exception as e:
+                ui.label(f'Error loading use cases: {e}').classes('text-red-500')
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
