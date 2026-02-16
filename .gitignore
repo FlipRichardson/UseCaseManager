@@ -1,3 +1,6 @@
+# frontend
+.nicegui/
+
 # Database
 *.db
 *.sqlite

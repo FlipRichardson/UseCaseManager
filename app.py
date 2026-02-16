@@ -1,0 +1,332 @@
+from nicegui import ui, app
+from services.user_service import UserService
+
+# init user service
+user_service = UserService()
+
+@ui.page('/')
+def index_page():
+    """
+    Entry point
+    If the current user is set -> Main page
+    If not -> Login page
+    """
+    if 'current_user' not in app.storage.user:
+        app.storage.user['current_user'] = None  # set key as cookie
+
+    if 'conversation_history' not in app.storage.user:
+        app.storage.user['conversation_history'] = []  # inti history
+
+    current_user = app.storage.user['current_user']
+
+    if current_user:
+        show_main_app()
+    else:
+        show_login_page()
+
+def show_login_page():
+    """  
+    Login page or register page: Page with email, PW fields as well as log in and register buttons.
+    """
+
+    with ui.column().classes('w-full h-screen items-center justify-center'):
+        # Creates a column that:
+        # - Takes full width and height of browser window
+        # - Centers everything inside both horizontally and vertically
+
+        # Card for login form
+        with ui.card().classes('w-96 p-8'):  # visible frame
+
+            # labels for title and input question
+            ui.label('UseCase Manager').classes('text-2xl font-bold mb-4')  # text size, bold, margin bottom
+            ui.label('Please log in to continue').classes('text-gray-600 mb-6') # text color, margin buttom
+
+            # Email input
+            email_input = ui.input('Email', placeholder='user@example.com').classes('w-full')
+
+            # Password input
+            password_input = ui.input('Password', password=True, password_toggle_button=True).classes('w-full')
+
+            # Error message placeholder
+            # for invalid input
+            error_label = ui.label('').classes('text-red-500 text-sm')  # error are red
+            error_label.visible = False
+
+            # Buttons row
+            with ui.row().classes('w-full gap-2 mt-4'):
+                ui.button('Login', on_click=lambda: handle_login(
+                    email_input.value, 
+                    password_input.value, 
+                    error_label
+                )).classes('flex-1')
+                
+                ui.button('Register', on_click=lambda: handle_register(
+                    email_input.value, 
+                    password_input.value, 
+                    error_label
+                )).classes('flex-1').props('outline')
+
+            # Test credentials info
+            with ui.expansion('Test Credentials', icon='info').classes('w-full mt-4'):
+                ui.label('Reader: reader@example.com / reader123').classes('text-sm')
+                ui.label('Maintainer: maintainer@example.com / maintainer123').classes('text-sm')
+                ui.label('Admin: admin@example.com / admin123').classes('text-sm')
+
+def handle_login(email : str, password : str, error_label):
+    """  
+    Handles login attempt (login button pressed)
+    """
+    # no email or no password provided
+    if not email or not password:
+        error_label.text = 'Please enter both email and password'
+        error_label.visible = True
+        return
+    
+    # if provided -> authenticate with user service
+    user = user_service.authenticate(email, password)
+
+    # if user is not None, i.e. its a valid user
+    if user:
+        # set user as current user
+        app.storage.user['current_user'] = user
+
+        # some welcome message
+        ui.notify(f'Welcome, {user["name"]}!', type='positive')
+
+        # reload index -> this time current user is set and the main application should load
+        ui.navigate.to('/')  # Reload page (will show main app)
+
+    else:
+        
+        # user is None -> no correct password/email -> stick on log in page
+        error_label.text = 'Invalid email or password'
+        error_label.visible = True
+
+def handle_register(email: str, password: str, error_label): 
+    """  
+    Handles registration event.
+    if the input is valid, i.e. email and password provided
+    -> creates a reader, makes login (sets user in cookies),
+    and reloads the index page. As the user is set now, the index with load the main page
+    """
+    # Validate inputs
+    if not email or not password:
+        error_label.text = 'Please enter both email and password'
+        error_label.visible = True
+        return
+    
+    # Create user (always as reader role)
+    try:
+        user = user_service.create_user(
+            email=email,
+            password=password,
+            role='reader',  # New users are always readers
+            name=email.split('@')[0].title()  # Use email prefix as name
+        )
+        
+        # Auto-login after registration
+        app.storage.user['current_user'] = user
+        ui.notify(f'Account created! Welcome, {user["name"]}!', type='positive')
+        ui.navigate.to('/')  # Reload page (will show main app)
+        
+    except ValueError as e:
+        error_label.text = str(e)
+        error_label.visible = True
+
+def send_message(message_input, chat_container):
+    """Handle sending a message to the agent"""
+    from agent import run_agent
+    from agent.tool_executor import set_current_user
+    
+    # Get message text
+    user_message = message_input.value.strip()
+    if not user_message:
+        return
+    
+    # Clear input
+    message_input.value = ''
+    
+    # Get current user and history
+    current_user = app.storage.user.get('current_user')
+    history = app.storage.user.get('conversation_history', [])
+    
+    # Set current user for agent permissions
+    set_current_user(current_user)
+    
+    # Add user message to history
+    history.append({
+        'role': 'user',
+        'content': user_message
+    })
+    
+    # Display user message
+    with chat_container:
+        with ui.row().classes('justify-end mb-2'):
+            ui.label(user_message).classes(
+                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+            )
+    
+    # Call agent (without verbose output)
+    try:
+        agent_response = run_agent(user_message, verbose=False, max_rounds=10)
+        
+        # Add agent response to history
+        history.append({
+            'role': 'assistant',
+            'content': agent_response
+        })
+        
+        # Display agent message
+        with chat_container:
+            with ui.row().classes('justify-start mb-2'):
+                ui.label(agent_response).classes(
+                    'bg-white px-4 py-2 rounded-lg border max-w-[80%] whitespace-pre-wrap'
+                )
+        
+        # Save history
+        app.storage.user['conversation_history'] = history
+        
+        # Scroll to bottom
+        chat_container.run_method('scrollTo', 0, 99999)
+        
+    except Exception as e:
+        
+        # Show error
+        with chat_container:
+            with ui.row().classes('justify-start mb-2'):
+                ui.label(f'Error: {str(e)}').classes(
+                    'bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 max-w-[80%]'
+                )
+
+def show_main_app():
+    """  
+    main application. is loaded by index page if user is set correctly.
+    This needs to be filled step by step.
+    """
+    current_user = app.storage.user.get('current_user')
+    
+    # Import here to avoid circular imports
+    from utils.permissions import check_permission
+    
+    # === HEADER ===
+    with ui.header().classes('items-center justify-between px-6'):
+        ui.label('UseCase Manager').classes('text-xl font-bold')
+        
+        with ui.row().classes('gap-4 items-center'):
+            # User info
+            with ui.row().classes('gap-2 items-center'):
+                ui.icon('person').classes('text-2xl')
+                ui.label(current_user['name']).classes('font-medium')
+                
+                # Role badge
+                role_color = {
+                    'reader': 'bg-gray-500',
+                    'maintainer': 'bg-blue-500', 
+                    'admin': 'bg-red-500'
+                }.get(current_user['role'], 'bg-gray-500')
+                
+                ui.label(current_user['role'].upper()).classes(
+                    f'{role_color} text-white px-3 py-1 rounded text-sm'
+                )
+            
+            # Logout button
+            def logout():
+                app.storage.user['current_user'] = None
+                app.storage.user['conversation_history'] = []
+                ui.notify('Logged out successfully', type='info')
+                ui.navigate.to('/')
+
+            ui.button('Logout', on_click=logout, icon='logout').props('flat color=white')
+    
+    # === MAIN CONTENT AREA ===
+    with ui.row().classes('w-full h-full gap-4 p-4'):
+        
+        # LEFT COLUMN - Chat (60%)
+        with ui.column().classes('flex-[3] gap-2'):
+            ui.label('Chat with AI Agent').classes('text-lg font-bold')
+            
+            # Chat messages container
+            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded')
+            
+            with chat_container:
+                # Get conversation history
+                if 'conversation_history' not in app.storage.user:
+                    app.storage.user['conversation_history'] = []
+                
+                history = app.storage.user['conversation_history']
+                
+                # Display existing messages
+                if not history:
+                    # no history yet
+                    ui.label('Start a conversation with the AI agent...').classes('text-gray-400 italic')
+
+                else:
+
+                    # fill history
+                    for msg in history:
+                        if msg['role'] == 'user':
+                            # User message (right-aligned, blue)
+                            with ui.row().classes('justify-end mb-2'):
+                                ui.label(msg['content']).classes(
+                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                                )
+                        else:
+                            # Agent message (left-aligned, gray)
+                            with ui.row().classes('justify-start mb-2'):
+                                ui.label(msg['content']).classes(
+                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%]'
+                                )
+            
+            # Input area at bottom
+            with ui.row().classes('gap-2 items-end'):
+                message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
+                
+                # Enable pressing Enter to send
+                message_input.on('keydown.enter', lambda: send_message(message_input, chat_container))
+                
+                send_btn = ui.button('Send', icon='send', on_click=lambda: send_message(message_input, chat_container))
+        
+        # RIGHT COLUMN - Table (40%)
+        with ui.column().classes('flex-[2] gap-2'):
+            with ui.row().classes('w-full items-center justify-between'):
+                ui.label('Use Cases').classes('text-lg font-bold')
+                
+                # Refresh button
+                def refresh_table():
+                    ui.navigate.to('/')  # Simple refresh for now
+                
+                ui.button(icon='refresh', on_click=refresh_table).props('flat dense').tooltip('Refresh table')
+            
+            # Table
+            from services import UseCaseService
+            service = UseCaseService()
+            
+            try:
+                use_cases = service.get_all_use_cases(current_user=current_user)
+                
+                # Table columns
+                columns = [
+                    {'name': 'id', 'label': 'ID', 'field': 'id', 'align': 'left', 'sortable': True},
+                    {'name': 'title', 'label': 'Title', 'field': 'title', 'align': 'left', 'sortable': True},
+                    {'name': 'company', 'label': 'Company', 'field': 'company_name', 'align': 'left', 'sortable': True},
+                    {'name': 'status', 'label': 'Status', 'field': 'status', 'align': 'left', 'sortable': True},
+                ]
+                
+                # Create table
+                table = ui.table(
+                    columns=columns,
+                    rows=use_cases,
+                    row_key='id',
+                    pagination={'rowsPerPage': 10, 'sortBy': 'id'}
+                ).classes('w-full')
+                
+            except Exception as e:
+                ui.label(f'Error loading use cases: {e}').classes('text-red-500')
+
+if __name__ in {"__main__", "__mp_main__"}:
+    ui.run(
+        title='UseCase Manager', 
+        port=8080, 
+        reload=False, 
+        storage_secret='use-case-manager-secret-2025'
+    )
