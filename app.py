@@ -161,7 +161,7 @@ def send_message(message_input, chat_container):
     
     # Display user message
     with chat_container:
-        with ui.row().classes('justify-end mb-2'):
+        with ui.row().classes('w-full mb-2'):
             ui.label(user_message).classes(
                 'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
             )
@@ -352,13 +352,49 @@ def show_main_app():
                     f'{role_color} text-white px-3 py-1 rounded text-sm'
                 )
             
-            # Logout button
+            # Upload Transcript button (only for maintainer/admin)
+            if check_permission(current_user, 'create'):
+                async def handle_upload(e):
+                    try:
+                        # Read uploaded file (async!)
+                        content = (await e.file.read()).decode('utf-8')
+
+                        from extraction import process_transcript
+                        from agent.tool_executor import set_current_user
+
+                        set_current_user(current_user)
+                        ui.notify('Processing transcript...', type='info')
+
+                        result = process_transcript(content, verbose=True)
+
+                        if result['success']:
+                            ui.notify(
+                                f'Success! Created {result["use_cases_created"]} use case(s)',
+                                type='positive'
+                            )
+                            ui.navigate.to('/')
+                        else:
+                            ui.notify('No use cases found in transcript', type='warning')
+
+                    except Exception as error:
+                        ui.notify(f'Error: {error}', type='negative')
+                        import traceback
+                        print(traceback.format_exc())
+
+                
+                ui.upload(
+                    on_upload=handle_upload,
+                    auto_upload=True,
+                    label='Upload Transcript'
+                ).props('flat color=white accept=.txt').tooltip('Upload workshop transcript (.txt)')
+            
+            # Logout button (OUTSIDE the if block, at the same level)
             def logout():
                 app.storage.user['current_user'] = None
                 app.storage.user['conversation_history'] = []
                 ui.notify('Logged out successfully', type='info')
                 ui.navigate.to('/')
-
+            
             ui.button('Logout', on_click=logout, icon='logout').props('flat color=white')
     
     # === MAIN CONTENT AREA ===
@@ -369,7 +405,7 @@ def show_main_app():
             ui.label('Chat with AI Agent').classes('text-lg font-bold')
             
             # Chat messages container
-            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded')
+            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded max-h-[500px]')
             
             with chat_container:
                 # Get conversation history
@@ -389,9 +425,9 @@ def show_main_app():
                     for msg in history:
                         if msg['role'] == 'user':
                             # User message (right-aligned, blue)
-                            with ui.row().classes('justify-end mb-2'):
+                            with ui.row().classes('w-full mb-2'):
                                 ui.label(msg['content']).classes(
-                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] ml-auto'
                                 )
                         else:
                             # Agent message (left-aligned, gray)
@@ -401,7 +437,8 @@ def show_main_app():
                                 )
             
             # Input area at bottom
-            with ui.row().classes('gap-2 items-end'):
+            #with ui.row().classes('gap-2 items-end'):
+            with ui.row().classes('w-full gap-2 items-end'):
                 message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
                 
                 # Enable pressing Enter to send
