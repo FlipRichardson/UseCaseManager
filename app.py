@@ -138,21 +138,59 @@ def show_main_app():
     main application. is loaded by index page if user is set correctly.
     This needs to be filled step by step.
     """
-    # get current user
     current_user = app.storage.user.get('current_user')
+    
+    # Import here to avoid circular imports
+    from utils.permissions import check_permission
+    
+    # === HEADER ===
+    with ui.header().classes('items-center justify-between px-6'):
+        ui.label('UseCase Manager').classes('text-xl font-bold')
+        
+        with ui.row().classes('gap-4 items-center'):
+            # User info
+            with ui.row().classes('gap-2 items-center'):
+                ui.icon('person').classes('text-2xl')
+                ui.label(current_user['name']).classes('font-medium')
+                
+                # Role badge
+                role_color = {
+                    'reader': 'bg-gray-500',
+                    'maintainer': 'bg-blue-500', 
+                    'admin': 'bg-red-500'
+                }.get(current_user['role'], 'bg-gray-500')
+                
+                ui.label(current_user['role'].upper()).classes(
+                    f'{role_color} text-white px-3 py-1 rounded text-sm'
+                )
+            
+            # Logout button
+            def logout():
+                app.storage.user['current_user'] = None
+                app.storage.user['conversation_history'] = []
+                ui.notify('Logged out successfully', type='info')
+                ui.navigate.to('/')
 
-    # display welcome page
-    with ui.column().classes('w-full h-screen items-center justify-center'):
-        ui.label(f'Welcome, {current_user["name"]}!').classes('text-2xl')
-        ui.label(f'Role: {current_user["role"]}').classes('text-gray-600')
+            ui.button('Logout', on_click=logout, icon='logout').props('flat color=white')
+    
+    # === MAIN CONTENT AREA ===
+    with ui.row().classes('w-full h-full gap-4 p-4'):
         
-        # load index page with user and conversation set to None or empty list, respectively
-        def logout():
-            app.storage.user['current_user'] = None
-            app.storage.user['conversation_history'] = []
-            ui.navigate.to('/')
+        # LEFT COLUMN - Chat (60%)
+        with ui.column().classes('flex-[3] gap-2'):
+            ui.label('Chat with AI Agent').classes('text-lg font-bold')
+            
+            # Chat container (placeholder)
+            with ui.card().classes('flex-1 p-4'):
+                ui.label('Chat will go here').classes('text-gray-500')
         
-        ui.button('Logout', on_click=logout).classes('mt-4')
+        # RIGHT COLUMN - Table (40%)
+        with ui.column().classes('flex-[2] gap-2'):
+            ui.label('Use Cases').classes('text-lg font-bold')
+            
+            # Table container (placeholder)
+            with ui.card().classes('flex-1 p-4'):
+                ui.label('Table will go here').classes('text-gray-500')
 
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
