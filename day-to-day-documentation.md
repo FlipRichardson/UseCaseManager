@@ -130,3 +130,26 @@ Day 5 (16.02. Morning):
     - agent tool executor not only needs to call the functions the agent asks but also needs to pass on the current user (global variable)
     - test: worked, reader can only read, maintainer verything but dlete and archive
     - user rights change will be done later
+- frontend building
+    - added login and register page:
+        - two field for email and password
+        - login button + register button
+        - login authenticates user, register create new user (as reader) and calls auto login
+    - built main window step by step: Basic - just login, rough outline of main page
+        - header with: Application name, user name, role, (upload transcript field, added later), logout
+        - build left side (chat agent) roughly: user input field, send message button, agent response field
+        - Added right side: table filled with database data (only id, title, company, status)
+    - added history to the agent and integrated passing on history saved in front ent to run_agent function
+    - added view use case to table view: eye to click on then all details of the use case are shown in a dialog
+    - in this dialog also main attributes of the use case may be changed (by admin and maintainer): title describtion, expected benefit
+    - added option to manually create:
+        - industry
+        - company
+        - person
+        - use case
+    - added option to the use case details view that can assign a person to a use case (person must be in same company)
+    - added upload manuscript function field (drag&drop): calls function already implemented process_tanscript
+    - various bug fixes asformatting of agents response, Not random positioning of the user input
+    - added user management: Admin can see a list of all users and can adapt their roles
+    - Solved problem: when the user asks something or transcripts are processed, the UI freezes -> added treads for that
+    - added update table function so that not the entire UI needs to be reloaded if the agent performs changes in the database
