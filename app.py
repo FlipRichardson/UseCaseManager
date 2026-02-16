@@ -172,7 +172,7 @@ def send_message(message_input, chat_container):
         agent_history = [msg for msg in history]  # Copy history
 
         # Call agent with full conversation context
-        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=False, max_rounds=10)
+        agent_response = run_agent(user_message, conversation_history=agent_history, verbose=True, max_rounds=10)
         
         # Add agent response to history
         history.append({
@@ -189,6 +189,8 @@ def send_message(message_input, chat_container):
         
         # Save history
         app.storage.user['conversation_history'] = history
+
+        ui.navigate.to('/')  # Simple refresh for now
         
         # Scroll to bottom
         chat_container.run_method('scrollTo', 0, 99999)
@@ -425,6 +427,7 @@ def show_main_app():
                     for msg in history:
                         if msg['role'] == 'user':
                             # User message (right-aligned, blue)
+
                             with ui.row().classes('w-full mb-2'):
                                 ui.label(msg['content']).classes(
                                     'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%] ml-auto'
