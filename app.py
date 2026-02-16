@@ -202,6 +202,125 @@ def send_message(message_input, chat_container):
                     'bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 max-w-[80%]'
                 )
 
+def show_use_case_details(use_case_data, current_user):
+    """Show use case details in a dialog"""
+    from services import UseCaseService
+    from utils.permissions import check_permission
+    
+    service = UseCaseService()
+    
+    # Get full use case details
+    use_case = service.get_use_case_by_id(use_case_data['id'], current_user=current_user)
+    
+    if not use_case:
+        ui.notify('Use case not found', type='negative')
+        return
+    
+    # Get contributors
+    try:
+        contributors = service.get_persons_by_use_case(use_case['id'], current_user=current_user)
+    except:
+        contributors = []
+    
+    # Check if user can edit
+    can_edit = check_permission(current_user, 'update')
+    can_delete = check_permission(current_user, 'delete')
+    
+    # Create dialog
+    with ui.dialog() as dialog, ui.card().classes('w-full max-w-2xl'):
+        # Header
+        with ui.row().classes('w-full items-center justify-between mb-4'):
+            ui.label('Use Case Details').classes('text-xl font-bold')
+            ui.button(icon='close', on_click=dialog.close).props('flat round dense')
+        
+        # Content
+        with ui.column().classes('w-full gap-4'):
+            
+            # ID (read-only always)
+            ui.label(f'ID: {use_case["id"]}').classes('text-sm text-gray-600')
+            
+            # Title
+            if can_edit:
+                title_input = ui.input('Title', value=use_case['title']).classes('w-full')
+            else:
+                ui.label('Title').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case['title']).classes('text-lg')
+            
+            # Description
+            if can_edit:
+                desc_input = ui.textarea('Description', value=use_case.get('description', '')).classes('w-full')
+            else:
+                ui.label('Description').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case.get('description', 'N/A')).classes('')
+            
+            # Expected Benefit
+            if can_edit:
+                benefit_input = ui.textarea('Expected Benefit', value=use_case.get('expected_benefit', '')).classes('w-full')
+            else:
+                ui.label('Expected Benefit').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case.get('expected_benefit', 'N/A')).classes('')
+            
+            # Status
+            if can_edit:
+                status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed', 'archived']
+                status_select = ui.select(status_options, value=use_case['status'], label='Status').classes('w-full')
+            else:
+                ui.label('Status').classes('text-sm font-medium text-gray-600')
+                ui.label(use_case['status'].replace('_', ' ').title()).classes('')
+            
+            # Company (read-only for now - could make dropdown later)
+            ui.label('Company').classes('text-sm font-medium text-gray-600')
+            ui.label(use_case['company_name']).classes('')
+            
+            # Industry (read-only)
+            ui.label('Industry').classes('text-sm font-medium text-gray-600')
+            ui.label(use_case['industry_name']).classes('')
+            
+            # Contributors
+            ui.label('Contributors').classes('text-sm font-medium text-gray-600')
+            if contributors:
+                for person in contributors:
+                    ui.label(f"• {person['name']} ({person['role']})").classes('text-sm')
+            else:
+                ui.label('No contributors listed').classes('text-sm italic text-gray-400')
+            
+            # Action buttons
+            with ui.row().classes('w-full gap-2 mt-4'):
+                if can_edit:
+                    def update_use_case():
+                        try:
+                            service.update_use_case(
+                                use_case_id=use_case['id'],
+                                title=title_input.value,
+                                description=desc_input.value,
+                                expected_benefit=benefit_input.value,
+                                status=status_select.value,
+                                current_user=current_user
+                            )
+                            ui.notify('Use case updated successfully!', type='positive')
+                            dialog.close()
+                            ui.navigate.to('/')  # Refresh page
+                        except Exception as e:
+                            ui.notify(f'Error updating: {e}', type='negative')
+                    
+                    ui.button('Update', on_click=update_use_case, icon='save').classes('flex-1')
+                
+                if can_delete:
+                    def delete_use_case():
+                        try:
+                            service.delete_use_case(use_case['id'], current_user=current_user)
+                            ui.notify('Use case deleted successfully!', type='positive')
+                            dialog.close()
+                            ui.navigate.to('/')  # Refresh page
+                        except Exception as e:
+                            ui.notify(f'Error deleting: {e}', type='negative')
+                    
+                    ui.button('Delete', on_click=delete_use_case, icon='delete', color='red').props('outline')
+                
+                ui.button('Close', on_click=dialog.close).props('outline')
+    
+    dialog.open()
+
 def show_main_app():
     """  
     main application. is loaded by index page if user is set correctly.
@@ -314,6 +433,7 @@ def show_main_app():
                     {'name': 'title', 'label': 'Title', 'field': 'title', 'align': 'left', 'sortable': True},
                     {'name': 'company', 'label': 'Company', 'field': 'company_name', 'align': 'left', 'sortable': True},
                     {'name': 'status', 'label': 'Status', 'field': 'status', 'align': 'left', 'sortable': True},
+                    {'name': 'actions', 'label': '', 'field': 'id', 'align': 'center'},  # Actions column
                 ]
                 
                 # Create table
@@ -323,6 +443,16 @@ def show_main_app():
                     row_key='id',
                     pagination={'rowsPerPage': 10, 'sortBy': 'id'}
                 ).classes('w-full')
+                
+                # Add "View" button to each row
+                table.add_slot('body-cell-actions', '''
+                    <q-td :props="props">
+                        <q-btn flat dense round icon="visibility" size="sm" color="primary" @click="$parent.$emit('view', props.row)" />
+                    </q-td>
+                ''')
+                
+                # Handle view button click
+                table.on('view', lambda e: show_use_case_details(e.args, current_user))
                 
             except Exception as e:
                 ui.label(f'Error loading use cases: {e}').classes('text-red-500')
