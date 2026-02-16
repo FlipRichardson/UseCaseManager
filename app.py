@@ -133,6 +133,71 @@ def handle_register(email: str, password: str, error_label):
         error_label.text = str(e)
         error_label.visible = True
 
+def send_message(message_input, chat_container):
+    """Handle sending a message to the agent"""
+    from agent import run_agent
+    from agent.tool_executor import set_current_user
+    
+    # Get message text
+    user_message = message_input.value.strip()
+    if not user_message:
+        return
+    
+    # Clear input
+    message_input.value = ''
+    
+    # Get current user and history
+    current_user = app.storage.user.get('current_user')
+    history = app.storage.user.get('conversation_history', [])
+    
+    # Set current user for agent permissions
+    set_current_user(current_user)
+    
+    # Add user message to history
+    history.append({
+        'role': 'user',
+        'content': user_message
+    })
+    
+    # Display user message
+    with chat_container:
+        with ui.row().classes('justify-end mb-2'):
+            ui.label(user_message).classes(
+                'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+            )
+    
+    # Call agent (without verbose output)
+    try:
+        agent_response = run_agent(user_message, verbose=False, max_rounds=10)
+        
+        # Add agent response to history
+        history.append({
+            'role': 'assistant',
+            'content': agent_response
+        })
+        
+        # Display agent message
+        with chat_container:
+            with ui.row().classes('justify-start mb-2'):
+                ui.label(agent_response).classes(
+                    'bg-white px-4 py-2 rounded-lg border max-w-[80%] whitespace-pre-wrap'
+                )
+        
+        # Save history
+        app.storage.user['conversation_history'] = history
+        
+        # Scroll to bottom
+        chat_container.run_method('scrollTo', 0, 99999)
+        
+    except Exception as e:
+        
+        # Show error
+        with chat_container:
+            with ui.row().classes('justify-start mb-2'):
+                ui.label(f'Error: {str(e)}').classes(
+                    'bg-red-100 text-red-700 px-4 py-2 rounded-lg border border-red-300 max-w-[80%]'
+                )
+
 def show_main_app():
     """  
     main application. is loaded by index page if user is set correctly.
@@ -180,9 +245,46 @@ def show_main_app():
         with ui.column().classes('flex-[3] gap-2'):
             ui.label('Chat with AI Agent').classes('text-lg font-bold')
             
-            # Chat container (placeholder)
-            with ui.card().classes('flex-1 p-4'):
-                ui.label('Chat will go here').classes('text-gray-500')
+            # Chat messages container
+            chat_container = ui.column().classes('flex-1 overflow-auto p-4 bg-gray-50 rounded')
+            
+            with chat_container:
+                # Get conversation history
+                if 'conversation_history' not in app.storage.user:
+                    app.storage.user['conversation_history'] = []
+                
+                history = app.storage.user['conversation_history']
+                
+                # Display existing messages
+                if not history:
+                    # no history yet
+                    ui.label('Start a conversation with the AI agent...').classes('text-gray-400 italic')
+
+                else:
+
+                    # fill history
+                    for msg in history:
+                        if msg['role'] == 'user':
+                            # User message (right-aligned, blue)
+                            with ui.row().classes('justify-end mb-2'):
+                                ui.label(msg['content']).classes(
+                                    'bg-blue-500 text-white px-4 py-2 rounded-lg max-w-[80%]'
+                                )
+                        else:
+                            # Agent message (left-aligned, gray)
+                            with ui.row().classes('justify-start mb-2'):
+                                ui.label(msg['content']).classes(
+                                    'bg-white px-4 py-2 rounded-lg border max-w-[80%]'
+                                )
+            
+            # Input area at bottom
+            with ui.row().classes('gap-2 items-end'):
+                message_input = ui.input('Type your message...').classes('flex-1').props('outlined')
+                
+                # Enable pressing Enter to send
+                message_input.on('keydown.enter', lambda: send_message(message_input, chat_container))
+                
+                send_btn = ui.button('Send', icon='send', on_click=lambda: send_message(message_input, chat_container))
         
         # RIGHT COLUMN - Table (40%)
         with ui.column().classes('flex-[2] gap-2'):
