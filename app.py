@@ -673,9 +673,9 @@ def show_main_app():
                         def create_industry():
                             try:
                                 service.create_industry(industry_name.value, current_user=current_user)
-                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive')
+                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive', timeout=3000)
                                 industry_name.value = ''
-                                ui.navigate.to('/')  # Refresh
+                                # No need to refresh page - industries don't affect the table
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
@@ -708,7 +708,6 @@ def show_main_app():
                                 )
                                 ui.notify(f'Company "{company_name.value}" created!', type='positive')
                                 company_name.value = ''
-                                ui.navigate.to('/')  # Refresh
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
@@ -744,7 +743,6 @@ def show_main_app():
                                 ui.notify(f'Person "{person_name.value}" created!', type='positive')
                                 person_name.value = ''
                                 person_role.value = ''
-                                ui.navigate.to('/')  # Refresh
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
@@ -799,7 +797,7 @@ def show_main_app():
                                 uc_title.value = ''
                                 uc_desc.value = ''
                                 uc_benefit.value = ''
-                                ui.navigate.to('/')  # Refresh
+                                refresh_use_case_table()  # Refresh just the table
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
