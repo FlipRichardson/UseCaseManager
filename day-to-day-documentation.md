@@ -153,3 +153,8 @@ Day 5 (16.02. Morning):
     - added user management: Admin can see a list of all users and can adapt their roles
     - Solved problem: when the user asks something or transcripts are processed, the UI freezes -> added treads for that
     - added update table function so that not the entire UI needs to be reloaded if the agent performs changes in the database
+
+Day 6 (Evening, 18.02.):
+- Planned UI testing strategy 
+- performed many test: see detailed documentation: Test-Documentation.md
+- Some minor bugfixes 
