@@ -417,7 +417,7 @@ def show_use_case_details(use_case_data, current_user):
                             service.delete_use_case(use_case['id'], current_user=current_user)
                             ui.notify('Use case deleted successfully!', type='positive')
                             dialog.close()
-                            ui.navigate.to('/')  # Refresh page
+                            refresh_use_case_table()
                         except Exception as e:
                             ui.notify(f'Error deleting: {e}', type='negative')
                     
