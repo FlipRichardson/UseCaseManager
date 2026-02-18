@@ -405,7 +405,7 @@ def show_use_case_details(use_case_data, current_user):
                             )
                             ui.notify('Use case updated successfully!', type='positive')
                             dialog.close()
-                            ui.navigate.to('/')  # Refresh page
+                            refresh_use_case_table()  # Just refresh the table ← CHANGED
                         except Exception as e:
                             ui.notify(f'Error updating: {e}', type='negative')
                     
@@ -417,7 +417,7 @@ def show_use_case_details(use_case_data, current_user):
                             service.delete_use_case(use_case['id'], current_user=current_user)
                             ui.notify('Use case deleted successfully!', type='positive')
                             dialog.close()
-                            ui.navigate.to('/')  # Refresh page
+                            refresh_use_case_table()
                         except Exception as e:
                             ui.notify(f'Error deleting: {e}', type='negative')
                     
@@ -464,8 +464,25 @@ def show_main_app():
                     import asyncio
                     
                     try:
-                        # Read uploaded file (async!)
-                        content = (await e.file.read()).decode('utf-8')
+                        # Check file type
+                        if not e.name.endswith('.txt'):
+                            ui.notify(
+                                'Invalid file type. Please upload a .txt file.',
+                                type='negative',
+                                timeout=3000
+                            )
+                            return
+                        
+                        # Read uploaded file 
+                        try:
+                            content = (await e.file.read()).decode('utf-8')
+                        except UnicodeDecodeError:
+                            ui.notify(
+                                'Unable to read file. Please ensure it is a valid text file.',
+                                type='negative',
+                                timeout=3000
+                            )
+                            return
                         
                         from extraction.transcript_processor import extract_prompts_from_transcript
                         from agent import run_agent
@@ -539,12 +556,22 @@ def show_main_app():
                         import traceback
                         print(traceback.format_exc())
 
-                
-                ui.upload(
+            
+                # Create a hidden upload widget
+                upload_widget = ui.upload(
                     on_upload=handle_upload,
-                    auto_upload=True,
-                    label='Upload Transcript'
-                ).props('flat color=white accept=.txt').tooltip('Upload workshop transcript (.txt)')
+                    auto_upload=True
+                ).props('accept=.txt').classes('hidden')
+
+                # Create a visible button that triggers the upload
+                def trigger_upload():
+                    upload_widget.run_method('pickFiles')
+
+                ui.button(
+                    'Upload Transcript',
+                    icon='upload_file',
+                    on_click=trigger_upload
+                ).props('flat color=white').tooltip('Upload workshop transcript (.txt)')
             
             # Logout button (OUTSIDE the if block, at the same level)
             def logout():
@@ -673,28 +700,37 @@ def show_main_app():
                         def create_industry():
                             try:
                                 service.create_industry(industry_name.value, current_user=current_user)
-                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive')
+                                ui.notify(f'Industry "{industry_name.value}" created!', type='positive', timeout=3000)
                                 industry_name.value = ''
-                                ui.navigate.to('/')  # Refresh
+                                # No need to refresh page - industries don't affect the table
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
                         ui.button('Create Industry', on_click=create_industry, icon='add')
                 
                 # Create Company
-                with ui.expansion('Create Company', icon='business').classes('w-full'):
+                company_expansion = ui.expansion('Create Company', icon='business').classes('w-full')
+                with company_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         company_name = ui.input('Company Name', placeholder='e.g., Tesla').classes('w-full')
                         
-                        # Get industries for dropdown
-                        industries = service.get_all_industries(current_user=current_user)
-                        industry_options = {ind['id']: ind['name'] for ind in industries}
-                        
+                        # Create select with initial empty options
                         company_industry = ui.select(
-                            options=industry_options,
+                            options={},
                             label='Industry'
                         ).classes('w-full')
                         
+                        # Refresh dropdown when expansion opens
+                        def refresh_company_industries():
+                            industries = service.get_all_industries(current_user=current_user)
+                            company_industry.options = {ind['id']: ind['name'] for ind in industries}
+                            company_industry.update()
+                        
+                        # Call refresh when expansion opens
+                        company_expansion.on('update:model-value', lambda e: refresh_company_industries() if e.args else None)
+                        
+                        # Also refresh on initial load
+                        refresh_company_industries()
                         def create_company():
                             try:
                                 if not company_industry.value:
@@ -708,26 +744,35 @@ def show_main_app():
                                 )
                                 ui.notify(f'Company "{company_name.value}" created!', type='positive')
                                 company_name.value = ''
-                                ui.navigate.to('/')  # Refresh
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
                         ui.button('Create Company', on_click=create_company, icon='add')
                 
                 # Create Person
-                with ui.expansion('Create Person', icon='person_add').classes('w-full'):
+                person_expansion = ui.expansion('Create Person', icon='person_add').classes('w-full')
+                with person_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         person_name = ui.input('Person Name', placeholder='e.g., John Doe').classes('w-full')
                         person_role = ui.input('Role', placeholder='e.g., CTO').classes('w-full')
                         
-                        # Get companies for dropdown
-                        companies = service.get_all_companies(current_user=current_user)
-                        company_options = {comp['id']: comp['name'] for comp in companies}
-                        
+                        # Create select with initial empty options
                         person_company = ui.select(
-                            options=company_options,
+                            options={},
                             label='Company'
                         ).classes('w-full')
+                        
+                        # Refresh dropdown when expansion opens
+                        def refresh_person_companies():
+                            companies = service.get_all_companies(current_user=current_user)
+                            person_company.options = {comp['id']: comp['name'] for comp in companies}
+                            person_company.update()
+                        
+                        # Call refresh when expansion opens
+                        person_expansion.on('update:model-value', lambda e: refresh_person_companies() if e.args else None)
+                        
+                        # Also refresh on initial load
+                        refresh_person_companies()
                         
                         def create_person():
                             try:
@@ -744,7 +789,6 @@ def show_main_app():
                                 ui.notify(f'Person "{person_name.value}" created!', type='positive')
                                 person_name.value = ''
                                 person_role.value = ''
-                                ui.navigate.to('/')  # Refresh
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
@@ -753,23 +797,69 @@ def show_main_app():
             # Right column - Use Case creation
             with ui.column().classes('flex-1 gap-2'):
                 
-                with ui.expansion('Create Use Case', icon='note_add').classes('w-full'):
+                uc_expansion = ui.expansion('Create Use Case', icon='note_add').classes('w-full')
+                with uc_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         uc_title = ui.input('Title', placeholder='Use Case Title').classes('w-full')
                         uc_desc = ui.textarea('Description', placeholder='Detailed description...').classes('w-full')
                         uc_benefit = ui.textarea('Expected Benefit', placeholder='Expected benefits...').classes('w-full')
                         
-                        # Dropdowns
-                        uc_company = ui.select(
-                            options=company_options,
-                            label='Company'
-                        ).classes('w-full')
+                        # Industry dropdown
+                        uc_industry = ui.select(options={}, label='Industry').classes('w-full')
                         
-                        uc_industry = ui.select(
-                            options=industry_options,
-                            label='Industry'
-                        ).classes('w-full')
+                        # Company dropdown (disabled initially)
+                        uc_company = ui.select(options={}, label='Company (select industry first)').classes('w-full')
+                        uc_company.disable()  # Start disabled
                         
+                        # Function to refresh industry dropdown
+                        def refresh_industries():
+                            industries = service.get_all_industries(current_user=current_user)
+                            uc_industry.options = {ind['id']: ind['name'] for ind in industries}
+                            uc_industry.update()
+                        
+                        # Function to refresh companies based on selected industry
+                        def on_industry_change():
+                            if not uc_industry.value:
+                                # No industry selected - disable company
+                                uc_company.options = {}
+                                uc_company.value = None
+                                uc_company.disable()
+                                uc_company.set_label('Company (select industry first)')
+                            else:
+                                # Industry selected - enable and filter companies
+                                all_companies = service.get_all_companies(current_user=current_user)
+                                
+                                # Filter companies by selected industry
+                                filtered_companies = {
+                                    comp['id']: comp['name'] 
+                                    for comp in all_companies 
+                                    if comp['industry_id'] == uc_industry.value
+                                }
+                                
+                                uc_company.options = filtered_companies
+                                uc_company.value = None  # Reset selection
+                                uc_company.enable()
+                                uc_company.set_label('Company')
+                                uc_company.update()
+                        
+                        # Attach industry change handler
+                        uc_industry.on('update:model-value', lambda: on_industry_change())
+                        
+                        # Refresh industries when expansion opens
+                        def refresh_all():
+                            refresh_industries()
+                            # Reset company dropdown
+                            uc_company.options = {}
+                            uc_company.value = None
+                            uc_company.disable()
+                            uc_company.set_label('Company (select industry first)')
+                        
+                        uc_expansion.on('update:model-value', lambda e: refresh_all() if e.args else None)
+                        
+                        # Initial load
+                        refresh_all()
+                        
+                        # Status dropdown
                         status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed']
                         uc_status = ui.select(
                             options=status_options,
@@ -782,8 +872,11 @@ def show_main_app():
                                 if not uc_title.value:
                                     ui.notify('Title is required', type='warning')
                                     return
-                                if not uc_company.value or not uc_industry.value:
-                                    ui.notify('Company and Industry are required', type='warning')
+                                if not uc_industry.value:
+                                    ui.notify('Industry is required', type='warning')
+                                    return
+                                if not uc_company.value:
+                                    ui.notify('Company is required', type='warning')
                                     return
                                 
                                 service.create_use_case(
@@ -799,7 +892,10 @@ def show_main_app():
                                 uc_title.value = ''
                                 uc_desc.value = ''
                                 uc_benefit.value = ''
-                                ui.navigate.to('/')  # Refresh
+                                uc_industry.value = None
+                                uc_company.value = None
+                                uc_company.disable()
+                                refresh_use_case_table()  # Refresh just the table
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
                         
@@ -860,8 +956,17 @@ def show_main_app():
                         old_role = user.role
                         user.role = new_role
                         db.commit()
-                        ui.notify(f'User {user.email} role changed from {old_role} to {new_role}', type='positive')
-                        ui.navigate.to('/')  # Refresh
+                        
+                        # Update the table data
+                        all_users = user_service.get_all_users()
+                        user_table.rows = all_users
+                        user_table.update()
+                        
+                        ui.notify(
+                            f'User {user.email} role changed from {old_role} to {new_role}', 
+                            type='positive',
+                            timeout=3000
+                        )
                     else:
                         ui.notify('User not found', type='negative')
                 finally:
@@ -869,7 +974,7 @@ def show_main_app():
                     
             except Exception as error:
                 ui.notify(f'Error changing role: {error}', type='negative')
-        
+
         user_table.on('set_role', change_user_role)
 
 if __name__ in {"__main__", "__mp_main__"}:
