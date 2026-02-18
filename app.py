@@ -682,19 +682,28 @@ def show_main_app():
                         ui.button('Create Industry', on_click=create_industry, icon='add')
                 
                 # Create Company
-                with ui.expansion('Create Company', icon='business').classes('w-full'):
+                company_expansion = ui.expansion('Create Company', icon='business').classes('w-full')
+                with company_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         company_name = ui.input('Company Name', placeholder='e.g., Tesla').classes('w-full')
                         
-                        # Get industries for dropdown
-                        industries = service.get_all_industries(current_user=current_user)
-                        industry_options = {ind['id']: ind['name'] for ind in industries}
-                        
+                        # Create select with initial empty options
                         company_industry = ui.select(
-                            options=industry_options,
+                            options={},
                             label='Industry'
                         ).classes('w-full')
                         
+                        # Refresh dropdown when expansion opens
+                        def refresh_company_industries():
+                            industries = service.get_all_industries(current_user=current_user)
+                            company_industry.options = {ind['id']: ind['name'] for ind in industries}
+                            company_industry.update()
+                        
+                        # Call refresh when expansion opens
+                        company_expansion.on('update:model-value', lambda e: refresh_company_industries() if e.args else None)
+                        
+                        # Also refresh on initial load
+                        refresh_company_industries()
                         def create_company():
                             try:
                                 if not company_industry.value:
@@ -714,19 +723,29 @@ def show_main_app():
                         ui.button('Create Company', on_click=create_company, icon='add')
                 
                 # Create Person
-                with ui.expansion('Create Person', icon='person_add').classes('w-full'):
+                person_expansion = ui.expansion('Create Person', icon='person_add').classes('w-full')
+                with person_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         person_name = ui.input('Person Name', placeholder='e.g., John Doe').classes('w-full')
                         person_role = ui.input('Role', placeholder='e.g., CTO').classes('w-full')
                         
-                        # Get companies for dropdown
-                        companies = service.get_all_companies(current_user=current_user)
-                        company_options = {comp['id']: comp['name'] for comp in companies}
-                        
+                        # Create select with initial empty options
                         person_company = ui.select(
-                            options=company_options,
+                            options={},
                             label='Company'
                         ).classes('w-full')
+                        
+                        # Refresh dropdown when expansion opens
+                        def refresh_person_companies():
+                            companies = service.get_all_companies(current_user=current_user)
+                            person_company.options = {comp['id']: comp['name'] for comp in companies}
+                            person_company.update()
+                        
+                        # Call refresh when expansion opens
+                        person_expansion.on('update:model-value', lambda e: refresh_person_companies() if e.args else None)
+                        
+                        # Also refresh on initial load
+                        refresh_person_companies()
                         
                         def create_person():
                             try:
@@ -751,23 +770,69 @@ def show_main_app():
             # Right column - Use Case creation
             with ui.column().classes('flex-1 gap-2'):
                 
-                with ui.expansion('Create Use Case', icon='note_add').classes('w-full'):
+                uc_expansion = ui.expansion('Create Use Case', icon='note_add').classes('w-full')
+                with uc_expansion:
                     with ui.column().classes('gap-2 p-2'):
                         uc_title = ui.input('Title', placeholder='Use Case Title').classes('w-full')
                         uc_desc = ui.textarea('Description', placeholder='Detailed description...').classes('w-full')
                         uc_benefit = ui.textarea('Expected Benefit', placeholder='Expected benefits...').classes('w-full')
                         
-                        # Dropdowns
-                        uc_company = ui.select(
-                            options=company_options,
-                            label='Company'
-                        ).classes('w-full')
+                        # Industry dropdown
+                        uc_industry = ui.select(options={}, label='Industry').classes('w-full')
                         
-                        uc_industry = ui.select(
-                            options=industry_options,
-                            label='Industry'
-                        ).classes('w-full')
+                        # Company dropdown (disabled initially)
+                        uc_company = ui.select(options={}, label='Company (select industry first)').classes('w-full')
+                        uc_company.disable()  # Start disabled
                         
+                        # Function to refresh industry dropdown
+                        def refresh_industries():
+                            industries = service.get_all_industries(current_user=current_user)
+                            uc_industry.options = {ind['id']: ind['name'] for ind in industries}
+                            uc_industry.update()
+                        
+                        # Function to refresh companies based on selected industry
+                        def on_industry_change():
+                            if not uc_industry.value:
+                                # No industry selected - disable company
+                                uc_company.options = {}
+                                uc_company.value = None
+                                uc_company.disable()
+                                uc_company.set_label('Company (select industry first)')
+                            else:
+                                # Industry selected - enable and filter companies
+                                all_companies = service.get_all_companies(current_user=current_user)
+                                
+                                # Filter companies by selected industry
+                                filtered_companies = {
+                                    comp['id']: comp['name'] 
+                                    for comp in all_companies 
+                                    if comp['industry_id'] == uc_industry.value
+                                }
+                                
+                                uc_company.options = filtered_companies
+                                uc_company.value = None  # Reset selection
+                                uc_company.enable()
+                                uc_company.set_label('Company')
+                                uc_company.update()
+                        
+                        # Attach industry change handler
+                        uc_industry.on('update:model-value', lambda: on_industry_change())
+                        
+                        # Refresh industries when expansion opens
+                        def refresh_all():
+                            refresh_industries()
+                            # Reset company dropdown
+                            uc_company.options = {}
+                            uc_company.value = None
+                            uc_company.disable()
+                            uc_company.set_label('Company (select industry first)')
+                        
+                        uc_expansion.on('update:model-value', lambda e: refresh_all() if e.args else None)
+                        
+                        # Initial load
+                        refresh_all()
+                        
+                        # Status dropdown
                         status_options = ['new', 'in_review', 'approved', 'in_progress', 'completed']
                         uc_status = ui.select(
                             options=status_options,
@@ -780,8 +845,11 @@ def show_main_app():
                                 if not uc_title.value:
                                     ui.notify('Title is required', type='warning')
                                     return
-                                if not uc_company.value or not uc_industry.value:
-                                    ui.notify('Company and Industry are required', type='warning')
+                                if not uc_industry.value:
+                                    ui.notify('Industry is required', type='warning')
+                                    return
+                                if not uc_company.value:
+                                    ui.notify('Company is required', type='warning')
                                     return
                                 
                                 service.create_use_case(
@@ -797,6 +865,9 @@ def show_main_app():
                                 uc_title.value = ''
                                 uc_desc.value = ''
                                 uc_benefit.value = ''
+                                uc_industry.value = None
+                                uc_company.value = None
+                                uc_company.disable()
                                 refresh_use_case_table()  # Refresh just the table
                             except Exception as e:
                                 ui.notify(f'Error: {e}', type='negative')
