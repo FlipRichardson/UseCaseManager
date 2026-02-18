@@ -939,8 +939,17 @@ def show_main_app():
                         old_role = user.role
                         user.role = new_role
                         db.commit()
-                        ui.notify(f'User {user.email} role changed from {old_role} to {new_role}', type='positive')
-                        ui.navigate.to('/')  # Refresh
+                        
+                        # Update the table data
+                        all_users = user_service.get_all_users()
+                        user_table.rows = all_users
+                        user_table.update()
+                        
+                        ui.notify(
+                            f'User {user.email} role changed from {old_role} to {new_role}', 
+                            type='positive',
+                            timeout=3000
+                        )
                     else:
                         ui.notify('User not found', type='negative')
                 finally:
@@ -948,7 +957,7 @@ def show_main_app():
                     
             except Exception as error:
                 ui.notify(f'Error changing role: {error}', type='negative')
-        
+
         user_table.on('set_role', change_user_role)
 
 if __name__ in {"__main__", "__mp_main__"}:
