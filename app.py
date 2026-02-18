@@ -464,8 +464,25 @@ def show_main_app():
                     import asyncio
                     
                     try:
-                        # Read uploaded file (async!)
-                        content = (await e.file.read()).decode('utf-8')
+                        # Check file type
+                        if not e.name.endswith('.txt'):
+                            ui.notify(
+                                'Invalid file type. Please upload a .txt file.',
+                                type='negative',
+                                timeout=3000
+                            )
+                            return
+                        
+                        # Read uploaded file 
+                        try:
+                            content = (await e.file.read()).decode('utf-8')
+                        except UnicodeDecodeError:
+                            ui.notify(
+                                'Unable to read file. Please ensure it is a valid text file.',
+                                type='negative',
+                                timeout=3000
+                            )
+                            return
                         
                         from extraction.transcript_processor import extract_prompts_from_transcript
                         from agent import run_agent
