@@ -405,7 +405,7 @@ def show_use_case_details(use_case_data, current_user):
                             )
                             ui.notify('Use case updated successfully!', type='positive')
                             dialog.close()
-                            ui.navigate.to('/')  # Refresh page
+                            refresh_use_case_table()  # Just refresh the table ← CHANGED
                         except Exception as e:
                             ui.notify(f'Error updating: {e}', type='negative')
                     
