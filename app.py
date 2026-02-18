@@ -539,12 +539,22 @@ def show_main_app():
                         import traceback
                         print(traceback.format_exc())
 
-                
-                ui.upload(
+            
+                # Create a hidden upload widget
+                upload_widget = ui.upload(
                     on_upload=handle_upload,
-                    auto_upload=True,
-                    label='Upload Transcript'
-                ).props('flat color=white accept=.txt').tooltip('Upload workshop transcript (.txt)')
+                    auto_upload=True
+                ).props('accept=.txt').classes('hidden')
+
+                # Create a visible button that triggers the upload
+                def trigger_upload():
+                    upload_widget.run_method('pickFiles')
+
+                ui.button(
+                    'Upload Transcript',
+                    icon='upload_file',
+                    on_click=trigger_upload
+                ).props('flat color=white').tooltip('Upload workshop transcript (.txt)')
             
             # Logout button (OUTSIDE the if block, at the same level)
             def logout():
