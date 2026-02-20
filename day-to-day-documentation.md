@@ -123,7 +123,7 @@
     - tested user log in and creation
     - Plan: Simple global user, no session management due to time restrictions
 
-Day 5 (16.02. Morning):
+# Day 5 (16.02. Morning):
 - Permissions: integrate user/user rights into service layer -> catch permission even if the user asks agent to do one job
     - utils/permission -> simple check function - require_permission(user, action) -> checks if user.role is allowed to perform action, e.g. "write"/"delete"
     - update service methods to use permissions -> calls require_permission with current user (added to methods arguments) and type of action
@@ -154,7 +154,10 @@ Day 5 (16.02. Morning):
     - Solved problem: when the user asks something or transcripts are processed, the UI freezes -> added treads for that
     - added update table function so that not the entire UI needs to be reloaded if the agent performs changes in the database
 
-Day 6 (Evening, 18.02.):
+# Day 6 (Evening, 18.02.):
 - Planned UI testing strategy 
 - performed many test: see detailed documentation: Test-Documentation.md
 - Some minor bugfixes 
+
+# Day 7 (Morning, 20.02.):
+- Updated README.md
