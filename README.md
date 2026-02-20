@@ -5,6 +5,7 @@ AI-powered use case management system with agent assistance and role-based acces
 # Overview
 
 UseCase Manager is a comprehensive system designed to help organizations manage and track AI/ML use cases discovered during workshops. It combines manual data entry with an AI agent that can create, query, and manage use cases through natural language conversation. The system includes automatic transcript processing to extract use cases from workshop transcripts.
+Demonstration can be found in DEMO.ipynb (run init_dummy_database.py first).
 
 ## Features
 
@@ -233,6 +234,7 @@ UseCaseManager/
 │
 ├── Main application files:
 │   ├── app.py                     # NiceGUI web interface (MAIN ENTRY)
+|   ├── DEMO.ipynb                 # Demonstration of all features besides app.py
 │   ├── init_comprehensive_db.py   # Database initialization script
 │   ├── requirements.txt           # Python dependencies
 │   ├── .env                       # Environment variables (not in git)
