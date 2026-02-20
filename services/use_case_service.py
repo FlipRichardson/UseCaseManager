@@ -69,7 +69,10 @@ class UseCaseService:
     
     def get_all_use_cases(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
-        Retrieve all use cases from the database.
+        Retrieve all use cases from the database. If current user is allowed to. 
+
+        Args:
+            current_user (dict) : current user dictionary (id, email, role, name)
     
         Returns:
             List[Dict[str, Any]]: List of dictionaries, each containing:
@@ -98,10 +101,11 @@ class UseCaseService:
 
     def get_use_case_by_id(self, use_case_id : int, current_user : dict = None) -> Optional[Dict[str, Any]]:
         """
-        Retreive an use case dict by providing its ID. 
+        Retreive an use case dict by providing its ID if current user is allowed to.
 
         Args:
             use_case_id (int) : use case id to get information for
+            current_user (dict) : current user dictionary (id, email, role, name)
 
         Returns:
             Dict[str, Any] : Dictionary about use case info
@@ -123,7 +127,7 @@ class UseCaseService:
 
     def create_use_case(self, title : str, company_id : int, industry_id : int, description : str = None, expected_benefit : str = None, status : str  = 'new', current_user : dict = None) -> Dict[str, Any]:
         """  
-        Create new use case in the database.
+        Create new use case in the database if current user is allowed to.
 
         Args: 
             title (str) : Use case title
@@ -132,6 +136,7 @@ class UseCaseService:
             description (Optional[str]) : Use case description, default None
             expected_benefit (OPtional[str]) : Expected benefit description, default None
             status (str) : use case's status value, default "new"
+            current_user (dict) : current user dictionary (id, email, role, name)
 
         Returns:
             Dict[str, Any] : Informatzion dictionary of use case created    
@@ -197,7 +202,7 @@ class UseCaseService:
             current_user : dict = None
             ) -> Dict[str, Any]:
         """ 
-        Update an use case specified by use_case id. Only arguments provided will be updated. 
+        Update an use case specified by use_case id. Only arguments provided will be updated if the current user is allowed to.
 
         Args:
             use_case_id (int): ID of the use case to update (required)
@@ -207,6 +212,7 @@ class UseCaseService:
             status (Optional[str]): New status (default: None, no change)
             company_id (Optional[int]): New company ID (default: None, no change)
             industry_id (Optional[int]): New industry ID (default: None, no change)
+            current_user (dict) : current user dictionary (id, email, role, name)
         
         Returns:
             Dict[str, Any]: Dictionary containing the updated use case information
@@ -273,11 +279,13 @@ class UseCaseService:
 
     def update_use_case_status(self, use_case_id : int, status : str, current_user : dict = None) -> Dict[str, Any]: 
         """ 
-        Update the status of an use case specifed by the ID. 
+        Update the status of an use case specifed by the ID if the current user is allowed to.
 
         Args: 
             use_case_id (int) : ID of the use case to get a new status
             status (str) : New staus value
+            current_user (dict) : current user dictionary (id, email, role, name)
+
         Reurns:
             Dict[str, Any] : Updated use case .
         """
@@ -309,10 +317,11 @@ class UseCaseService:
     
     def delete_use_case(self, use_case_id : int, current_user : dict = None) -> Dict[str, Any]:
         """ 
-        Delete one use case from the database and returns its informatin  for the last time.
+        Delete one use case from the database and returns its informatin for the last time if the current user is allowed to.
 
         Args:
             use_case_id (int) : I dod the use case to be deleted
+            current_user (dict) : current user dictionary (id, email, role, name)
 
         Returns:
             dict of informatin of te use case that has been deleted.
@@ -353,12 +362,14 @@ class UseCaseService:
         """ 
         Filter use cases by various criteria.
         All filters are optional.
+        If current user is allowed to. 
         
         Args:
             industry_id: Filter by industry ID (optional)
             company_id: Filter by company ID (optional)
             status: Filter by status (optional)
             person_id: Filter by person who contributed (optional)
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             List of use cases matching the filters
@@ -396,10 +407,11 @@ class UseCaseService:
 
     def archive_use_case(self, use_case_id : int, current_user : dict = None) -> Dict[str, Any]: 
         """
-        Sets the status of a use case to archived. 
+        Sets the status of a use case to archived in case user has admin rights.
 
         Args: 
             use_case_id (int) : use case id of use case to be archived
+            current_user (dict) : current user dictionary (id, email, role, name)
 
         Returns:
             Dict[str, Any] : Dict of the use case that has been archived
@@ -410,6 +422,9 @@ class UseCaseService:
     def get_all_industries(self, current_user : dict = None) -> List[Dict[str, Any]]:
         """  
         Get all industries with their IDs and names.
+
+        Args: 
+            current_user (dict) : current user dictionary (id, email, role, name)
 
         Returns:
             List[Dict[str, Any]]: List of dictionaries containing:
@@ -429,6 +444,9 @@ class UseCaseService:
     def get_all_companies(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
         Get all companies with their IDs, names, and industry information.
+
+        Args:
+            current_user (dict) : current user dictionary (id, email, role, name)
         
         Returns:
             List[Dict[str, Any]]: List of dictionaries containing:
@@ -454,6 +472,9 @@ class UseCaseService:
     def get_all_persons(self, current_user : dict = None) -> List[Dict[str, Any]]: 
         """ 
         Get all persons with their IDs, names, roles, and company information.
+
+        Args:
+            current_user (dict) : current user dictionary (id, email, role, name)
         
         Returns:
             List[Dict[str, Any]]: List of dictionaries containing:
@@ -481,10 +502,11 @@ class UseCaseService:
 
     def get_persons_by_use_case(self, use_case_id : int, current_user : dict = None) -> List[Dict[str, Any]]: 
         """  
-        Get all persons who contributed to a specific use case.
+        Get all persons who contributed to a specific use case if the current user is allowed to. 
         
         Args:
             use_case_id (int): ID of the use case
+            current_user (dict) : current user dictionary (id, email, role, name)
         
         Returns:
             List[Dict[str, Any]]: List of dictionaries containing:
@@ -513,10 +535,11 @@ class UseCaseService:
 
     def create_industry(self, name: str, current_user : dict = None) -> Dict[str, Any]:
         """
-        Create a new industry.
+        Create a new industry if the current user is allowed to.
         
         Args:
             name (str): Industry name
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Created industry with id and name
@@ -547,11 +570,12 @@ class UseCaseService:
 
     def create_company(self, name: str, industry_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
-        Create a new company.
+        Create a new company if the current user is allowed to. 
         
         Args:
             name (str): Company name
             industry_id (int): ID of the industry this company belongs to
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Created company info
@@ -592,12 +616,13 @@ class UseCaseService:
 
     def create_person(self, name: str, role: str, company_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
-        Create a new person.
+        Create a new person if the user is allowed to.
         
         Args:
             name (str): Person's name
             role (str): Person's role/position
             company_id (int): ID of the company this person works for
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Created person info
@@ -635,11 +660,12 @@ class UseCaseService:
 
     def find_or_create_industry(self, name: str, current_user : dict = None) -> Dict[str, Any]:
         """
-        Find existing industry by name, or create if doesn't exist.
+        Find existing industry by name, or create if doesn't exist if the current user is allowed to.
         Case-insensitive search.
         
         Args:
             name (str): Industry name
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Industry info (existing or newly created)
@@ -669,13 +695,14 @@ class UseCaseService:
 
     def find_or_create_company(self, name: str, industry_name: str, current_user : dict = None) -> Dict[str, Any]:
         """
-        Find existing company by name, or create if doesn't exist.
+        Find existing company by name, or create if doesn't exist is the current user is allowed to un this operation.
         Also ensures industry exists (creates if needed).
         Case-insensitive search.
         
         Args:
             name (str): Company name
             industry_name (str): Industry name
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Company info (existing or newly created)
@@ -725,13 +752,14 @@ class UseCaseService:
 
     def find_or_create_person(self, name: str, role: str, company_id: int, current_user : dict = None) -> Dict[str, Any]:
         """
-        Find existing person by name and company, or create if doesn't exist.
+        Find existing person by name and company, or create if doesn't exist if the current user is allowed to.
         Updates role if person exists but role has changed.
         
         Args:
             name (str): Person's name
             role (str): Person's role/position
             company_id (int): Company ID
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict[str, Any]: Person info (existing or newly created)
@@ -779,12 +807,13 @@ class UseCaseService:
 
     def add_persons_to_use_case(self, use_case_id: int, person_ids: List[int], current_user : dict = None) -> Dict[str, Any]:
         """
-        Add persons to a use case (many-to-many relationship).
+        Add persons to a use case if the current user is allowed to.
         Does NOT clear existing persons - only adds new ones.
         
         Args:
             use_case_id (int): ID of the use case
             person_ids (List[int]): List of person IDs to add
+            current_user (dict) : current user dictionary (id, email, role, name)
             
         Returns:
             Dict with use case info and linked persons
@@ -823,9 +852,6 @@ class UseCaseService:
             raise e
         finally:
             db.close()
-
-
-
             
     def __repr__(self):
         return "<UseCaseService>"

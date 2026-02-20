@@ -27,6 +27,7 @@ def run_agent(user_message: str, conversation_history: list = None, verbose: boo
     
     Args:
         user_message (str): The user's question/command
+        conversation_history (list) : previous messages and chat history
         verbose (bool): If True, prints detailed execution info (default: True)
         max_rounds (int): Maximum number of tool-calling rounds (default: 2)
     

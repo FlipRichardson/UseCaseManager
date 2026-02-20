@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from agent import run_agent
+from typing import List, Dict
 
 # Load environment
 load_dotenv()
@@ -53,13 +54,13 @@ CRITICAL: Return ONLY the JSON array, no other text, no markdown formatting, no 
 """
 
 
-def extract_prompts_from_transcript(transcript_text: str, verbose: bool = True):
+def extract_prompts_from_transcript(transcript_text: str, verbose: bool = True) -> List:
     """
     Extract use case prompts from a workshop transcript.
     
     Args:
-        transcript_text: The full transcript text
-        verbose: Whether to print progress
+        transcript_text (str): The full transcript text
+        verbose (bool): Whether to print progress
         
     Returns:
         list: List of prompt strings for the agent
@@ -110,16 +111,17 @@ def extract_prompts_from_transcript(transcript_text: str, verbose: bool = True):
         return []
     
 
-def process_transcript(transcript_text: str, verbose: bool = True):
+def process_transcript(transcript_text: str, verbose: bool = True) -> Dict:
     """
     Complete workflow: Extract prompts from transcript and create all use cases.
     
     Args:
-        transcript_text: The workshop transcript
-        verbose: Whether to print detailed progress
+        transcript_text (str): The workshop transcript
+        verbose (bool): Whether to print detailed progress
         
     Returns:
-        dict: Summary of results
+        dict: Summary of results, containing success: bool, promts_extracted: int, use_cases_created: bool, 
+        results: list of dict containing, success (bool), promt (str), response (str)
     """
     if verbose:
         print("\n" + "="*80)

@@ -77,7 +77,12 @@ def show_login_page():
 
 def handle_login(email : str, password : str, error_label):
     """  
-    Handles login attempt (login button pressed)
+    Handles login attempt (login button pressed), if usccessfull logs user in and loads main page.
+
+    Args:
+        email (str) : EMail str, taken from input field
+        password (str) : password the user provided
+        error_label (ui.label) : label obj to write a possible error message in
     """
     # no email or no password provided
     if not email or not password:
@@ -111,6 +116,11 @@ def handle_register(email: str, password: str, error_label):
     if the input is valid, i.e. email and password provided
     -> creates a reader, makes login (sets user in cookies),
     and reloads the index page. As the user is set now, the index with load the main page
+
+    Args:
+        email (str) : EMail str, taken from input field
+        password (str) : password the user provided
+        error_label (ui.label) : label obj to write a possible error message in
     """
     # Validate inputs
     if not email or not password:
@@ -137,7 +147,7 @@ def handle_register(email: str, password: str, error_label):
         error_label.visible = True
 
 def refresh_use_case_table():
-    """Refresh the use case table without reloading the page"""
+    """Refresh the use case table without reloading the page. Can be called when the user or agent updated some use case vairables."""
     try:
         # Get current user and table reference
         current_user = app.storage.user.get('current_user')
@@ -159,7 +169,13 @@ def refresh_use_case_table():
         print(f"Error refreshing table: {e}")
 
 async def send_message(message_input, chat_container):
-    """Handle sending a message to the agent (async to prevent UI freeze)"""
+    """Handle sending a message to the agent (async to prevent UI freeze). 
+    Calls agent and shows agent thinking while processing. Updates table afterwards.
+    
+    Args: 
+        message_input : user command
+        chat_container (ui.column) : container obj
+    """
     import asyncio
     from agent import run_agent
     from agent.tool_executor import set_current_user
@@ -255,7 +271,13 @@ async def send_message(message_input, chat_container):
                 )
 
 def show_use_case_details(use_case_data, current_user):
-    """Show use case details in a dialog"""
+    """Show use case details in a dialog and visualizes use case data and 
+    oppotunity for change/delete if user owns the corresponding rights.
+    
+    Args: 
+        use_case_data (dict) : use case data
+        current_user (dict) : current user dict
+    """
     from services import UseCaseService
     from utils.permissions import check_permission
     
