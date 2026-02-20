@@ -163,3 +163,4 @@
 - Updated README.md
 - set up demo notebook for showing functionality
 - tested set up with env creation and fixed requirements.txt
+- updated doc strings
