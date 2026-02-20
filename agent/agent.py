@@ -17,7 +17,7 @@ client = OpenAI(
 )
 
 
-def run_agent(user_message: str, conversation_history: list = None, verbose: bool = True, max_rounds: int = 10):
+def run_agent(user_message: str, conversation_history: list = None, verbose: bool = False, max_rounds: int = 10):
     """
     Run the agent with multi-round tool calling support.
     
