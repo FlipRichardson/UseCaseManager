@@ -161,3 +161,5 @@
 
 # Day 7 (Morning, 20.02.):
 - Updated README.md
+- set up demo notebook for showing functionality
+- tested set up with env creation and fixed requirements.txt

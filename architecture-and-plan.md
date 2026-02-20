@@ -7,6 +7,26 @@
 - Limited daily hours due to job
 - First assessment: Implementation of all features is not possible, even core ones are very hard, priorization needed
 
+### Scope Definition
+
+**In Scope:**
+- Core use case CRUD (create, read, update, delete)
+- AI agent with natural language queries
+- Multi-round tool calling (agent can gather info across multiple steps)
+- Transcript extraction (LLM extracts use cases from workshop notes)
+- Company/Industry/Person management
+- Role-based access (Reader/Maintainer/Admin)
+- Basic web UI (NiceGUI for speed)
+- Status workflow (new → in_review → approved → in_progress → completed → archived)
+
+**Out of Scope (Deferred):**
+- Multi-tenant architecture
+- Advanced analytics/dashboards
+- Real-time collaboration
+- Complex use case relationships
+- Production deployment (Docker, CI/CD)
+- Automated test suite
+- Advanced visualizations
 
 ## Technology Plan
 
@@ -150,9 +170,3 @@ Same as should haves, maybe visualizations would be nice.
 - How much validation in service layer vs. trusting LLM
 - Error handling strategy for LLM failures
 
-
-
-
----
-
-**Last Updated:** Day 1 - Initial Planning
