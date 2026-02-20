@@ -9,7 +9,7 @@
 
 ### Scope Definition
 
-**In Scope:**
+**In Scope (Must haves):**
 - Core use case CRUD (create, read, update, delete)
 - AI agent with natural language queries
 - Multi-round tool calling (agent can gather info across multiple steps)
@@ -19,14 +19,14 @@
 - Basic web UI (NiceGUI for speed)
 - Status workflow (new → in_review → approved → in_progress → completed → archived)
 
-**Out of Scope (Deferred):**
-- Multi-tenant architecture
-- Advanced analytics/dashboards
-- Real-time collaboration
-- Complex use case relationships
-- Production deployment (Docker, CI/CD)
-- Automated test suite
-- Advanced visualizations
+**Out of Scope (should haves and nice to haves 8-14):**
+- Relationships between use cases
+- Industry-wide intelligence - not explicitly implemented but may partly work
+- Evaluation and priorization 
+- Road map generation
+- use case library and inspiration - may work partly
+- Multi transcript support
+- Visualization
 
 ## Technology Plan
 
