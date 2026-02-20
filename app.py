@@ -229,7 +229,7 @@ async def send_message(message_input, chat_container):
             run_agent,
             user_message,
             conversation_history=agent_history[:-1],
-            verbose=True,
+            verbose=False,
             max_rounds=10
         )
         
@@ -545,7 +545,7 @@ def show_main_app():
                                     run_agent,
                                     prompt,
                                     conversation_history=None,
-                                    verbose=True,
+                                    verbose=False,
                                     max_rounds=10
                                 )
                                 successful += 1
